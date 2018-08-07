@@ -18,11 +18,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/swarm/storage"
+	"github.com/allsportschain/go-allsportschain/cmd/utils"
+	"github.com/allsportschain/go-allsportschain/swarm/storage"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -38,11 +39,11 @@ func hash(ctx *cli.Context) {
 	defer f.Close()
 
 	stat, _ := f.Stat()
-	chunker := storage.NewTreeChunker(storage.NewChunkerParams())
-	key, err := chunker.Split(f, stat.Size(), nil, nil, nil)
+	fileStore := storage.NewFileStore(storage.NewMapChunkStore(), storage.NewFileStoreParams())
+	addr, _, err := fileStore.Store(context.TODO(), f, stat.Size(), false)
 	if err != nil {
 		utils.Fatalf("%v\n", err)
 	} else {
-		fmt.Printf("%v\n", key)
+		fmt.Printf("%v\n", addr)
 	}
 }

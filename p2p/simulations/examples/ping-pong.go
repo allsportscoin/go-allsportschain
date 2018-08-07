@@ -25,13 +25,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/p2p/simulations"
-	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/allsportschain/go-allsportschain/log"
+	"github.com/allsportschain/go-allsportschain/node"
+	"github.com/allsportschain/go-allsportschain/p2p"
+	"github.com/allsportschain/go-allsportschain/p2p/discover"
+	"github.com/allsportschain/go-allsportschain/p2p/simulations"
+	"github.com/allsportschain/go-allsportschain/p2p/simulations/adapters"
+	"github.com/allsportschain/go-allsportschain/rpc"
 )
 
 var adapterType = flag.String("adapter", "sim", `node adapter to use (one of "sim", "exec" or "docker")`)

@@ -27,12 +27,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/allsportschain/go-allsportschain/event"
+	"github.com/allsportschain/go-allsportschain/node"
+	"github.com/allsportschain/go-allsportschain/p2p"
+	"github.com/allsportschain/go-allsportschain/p2p/discover"
+	"github.com/allsportschain/go-allsportschain/p2p/simulations/adapters"
+	"github.com/allsportschain/go-allsportschain/rpc"
 )
 
 // testService implements the node.Service interface and provides protocols
@@ -348,7 +348,8 @@ func startTestNetwork(t *testing.T, client *Client) []string {
 	nodeCount := 2
 	nodeIDs := make([]string, nodeCount)
 	for i := 0; i < nodeCount; i++ {
-		node, err := client.CreateNode(nil)
+		config := adapters.RandomNodeConfig()
+		node, err := client.CreateNode(config)
 		if err != nil {
 			t.Fatalf("error creating node: %s", err)
 		}
@@ -527,7 +528,9 @@ func TestHTTPNodeRPC(t *testing.T) {
 
 	// start a node in the network
 	client := NewClient(s.URL)
-	node, err := client.CreateNode(nil)
+
+	config := adapters.RandomNodeConfig()
+	node, err := client.CreateNode(config)
 	if err != nil {
 		t.Fatalf("error creating node: %s", err)
 	}
@@ -589,7 +592,8 @@ func TestHTTPSnapshot(t *testing.T) {
 	nodeCount := 2
 	nodes := make([]*p2p.NodeInfo, nodeCount)
 	for i := 0; i < nodeCount; i++ {
-		node, err := client.CreateNode(nil)
+		config := adapters.RandomNodeConfig()
+		node, err := client.CreateNode(config)
 		if err != nil {
 			t.Fatalf("error creating node: %s", err)
 		}

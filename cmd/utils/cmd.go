@@ -27,16 +27,16 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/allsportschain/go-allsportschain/common"
+	"github.com/allsportschain/go-allsportschain/core"
+	"github.com/allsportschain/go-allsportschain/core/rawdb"
+	"github.com/allsportschain/go-allsportschain/core/types"
+	"github.com/allsportschain/go-allsportschain/crypto"
+	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/internal/debug"
+	"github.com/allsportschain/go-allsportschain/log"
+	"github.com/allsportschain/go-allsportschain/node"
+	"github.com/allsportschain/go-allsportschain/rlp"
 )
 
 const (

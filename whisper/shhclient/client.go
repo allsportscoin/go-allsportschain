@@ -19,10 +19,10 @@ package shhclient
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/rpc"
-	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
+	"github.com/allsportschain/go-allsportschain"
+	"github.com/allsportschain/go-allsportschain/common/hexutil"
+	"github.com/allsportschain/go-allsportschain/rpc"
+	whisper "github.com/allsportschain/go-allsportschain/whisper/whisperv6"
 )
 
 // Client defines typed wrappers for the Whisper v6 RPC API.
@@ -159,9 +159,9 @@ func (sc *Client) DeleteSymmetricKey(ctx context.Context, id string) error {
 }
 
 // Post a message onto the network.
-func (sc *Client) Post(ctx context.Context, message whisper.NewMessage) error {
-	var ignored bool
-	return sc.c.CallContext(ctx, &ignored, "shh_post", message)
+func (sc *Client) Post(ctx context.Context, message whisper.NewMessage) (string, error) {
+	var hash string
+	return hash, sc.c.CallContext(ctx, &hash, "shh_post", message)
 }
 
 // SubscribeMessages subscribes to messages that match the given criteria. This method

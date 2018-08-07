@@ -24,18 +24,18 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/ethstats"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/les"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/nat"
-	"github.com/ethereum/go-ethereum/params"
-	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
+	"github.com/allsportschain/go-allsportschain/core"
+	"github.com/allsportschain/go-allsportschain/eth"
+	"github.com/allsportschain/go-allsportschain/eth/downloader"
+	"github.com/allsportschain/go-allsportschain/ethclient"
+	"github.com/allsportschain/go-allsportschain/ethstats"
+	"github.com/allsportschain/go-allsportschain/internal/debug"
+	"github.com/allsportschain/go-allsportschain/les"
+	"github.com/allsportschain/go-allsportschain/node"
+	"github.com/allsportschain/go-allsportschain/p2p"
+	"github.com/allsportschain/go-allsportschain/p2p/nat"
+	"github.com/allsportschain/go-allsportschain/params"
+	whisper "github.com/allsportschain/go-allsportschain/whisper/whisperv6"
 )
 
 // NodeConfig represents the collection of configuration values to fine tune the Geth
@@ -193,7 +193,7 @@ func (n *Node) Start() error {
 	return n.node.Start()
 }
 
-// Stop terminates a running node along with all it's services. In the node was
+// Stop terminates a running node along with all it's services. If the node was
 // not started, an error is returned.
 func (n *Node) Stop() error {
 	return n.node.Stop()

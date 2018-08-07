@@ -21,9 +21,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/allsportschain/go-allsportschain/common"
+	"github.com/allsportschain/go-allsportschain/crypto"
+	"github.com/allsportschain/go-allsportschain/ethdb"
 	checker "gopkg.in/check.v1"
 )
 
@@ -99,7 +99,7 @@ func (s *StateSuite) TestNull(c *checker.C) {
 	s.state.SetState(address, common.Hash{}, value)
 	s.state.Commit(false)
 	value = s.state.GetState(address, common.Hash{})
-	if !common.EmptyHash(value) {
+	if value != (common.Hash{}) {
 		c.Errorf("expected empty hash. got %x", value)
 	}
 }

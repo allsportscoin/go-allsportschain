@@ -23,8 +23,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/allsportschain/go-allsportschain/core"
+	"github.com/allsportschain/go-allsportschain/log"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -275,14 +275,4 @@ func (stats serverStats) render() {
 		}
 	}
 	table.Render()
-}
-
-// protips contains a collection of network infos to report pro-tips
-// based on.
-type protips struct {
-	genesis   string
-	network   int64
-	bootFull  []string
-	bootLight []string
-	ethstats  string
 }

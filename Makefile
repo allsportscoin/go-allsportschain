@@ -11,6 +11,11 @@
 GOBIN = $(shell pwd)/build/bin
 GO ?= latest
 
+gsoc:
+	build/env.sh go run build/ci.go install ./cmd/gsoc
+	@echo "Done building."
+	@echo "Run \"$(GOBIN)/gsoc\" to launch gsoc."
+
 geth:
 	build/env.sh go run build/ci.go install ./cmd/geth
 	@echo "Done building."

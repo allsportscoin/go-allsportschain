@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/allsportschain/go-allsportschain/cmd/utils"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -38,6 +38,7 @@ func init() {
 	app.Commands = []cli.Command{
 		commandGenerate,
 		commandInspect,
+		commandChangePassphrase,
 		commandSignMessage,
 		commandVerifyMessage,
 	}
