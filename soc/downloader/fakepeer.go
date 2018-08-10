@@ -23,7 +23,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/core/rawdb"
 	"github.com/allsportschain/go-allsportschain/core/types"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/socdb"
 )
 
 // FakePeer is a mock downloader peer that operates on a local database instance
@@ -31,13 +31,13 @@ import (
 // sync commands from an existing local database.
 type FakePeer struct {
 	id string
-	db ethdb.Database
+	db socdb.Database
 	hc *core.HeaderChain
 	dl *Downloader
 }
 
 // NewFakePeer creates a new mock downloader peer with the given data sources.
-func NewFakePeer(id string, db ethdb.Database, hc *core.HeaderChain, dl *Downloader) *FakePeer {
+func NewFakePeer(id string, db socdb.Database, hc *core.HeaderChain, dl *Downloader) *FakePeer {
 	return &FakePeer{id: id, db: db, hc: hc, dl: dl}
 }
 

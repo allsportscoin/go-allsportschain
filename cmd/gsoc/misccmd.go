@@ -24,8 +24,8 @@ import (
 	"strings"
 
 	"github.com/allsportschain/go-allsportschain/cmd/utils"
-	"github.com/allsportschain/go-allsportschain/consensus/ethash"
-	"github.com/allsportschain/go-allsportschain/eth"
+	"github.com/allsportschain/go-allsportschain/consensus/sochash"
+	"github.com/allsportschain/go-allsportschain/soc"
 	"github.com/allsportschain/go-allsportschain/params"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -34,11 +34,11 @@ var (
 	makecacheCommand = cli.Command{
 		Action:    utils.MigrateFlags(makecache),
 		Name:      "makecache",
-		Usage:     "Generate ethash verification cache (for testing)",
+		Usage:     "Generate sochash verification cache (for testing)",
 		ArgsUsage: "<blockNum> <outputDir>",
 		Category:  "MISCELLANEOUS COMMANDS",
 		Description: `
-The makecache command generates an ethash cache in <outputDir>.
+The makecache command generates an sochash cache in <outputDir>.
 
 This command exists to support the system testing project.
 Regular users do not need to execute it.
@@ -47,11 +47,11 @@ Regular users do not need to execute it.
 	makedagCommand = cli.Command{
 		Action:    utils.MigrateFlags(makedag),
 		Name:      "makedag",
-		Usage:     "Generate ethash mining DAG (for testing)",
+		Usage:     "Generate sochash mining DAG (for testing)",
 		ArgsUsage: "<blockNum> <outputDir>",
 		Category:  "MISCELLANEOUS COMMANDS",
 		Description: `
-The makedag command generates an ethash DAG in <outputDir>.
+The makedag command generates an sochash DAG in <outputDir>.
 
 This command exists to support the system testing project.
 Regular users do not need to execute it.
@@ -76,7 +76,7 @@ The output of this command is supposed to be machine-readable.
 	}
 )
 
-// makecache generates an ethash verification cache into the provided folder.
+// makecache generates an sochash verification cache into the provided folder.
 func makecache(ctx *cli.Context) error {
 	args := ctx.Args()
 	if len(args) != 2 {
@@ -86,12 +86,12 @@ func makecache(ctx *cli.Context) error {
 	if err != nil {
 		utils.Fatalf("Invalid block number: %v", err)
 	}
-	ethash.MakeCache(block, args[1])
+	sochash.MakeCache(block, args[1])
 
 	return nil
 }
 
-// makedag generates an ethash mining DAG into the provided folder.
+// makedag generates an sochash mining DAG into the provided folder.
 func makedag(ctx *cli.Context) error {
 	args := ctx.Args()
 	if len(args) != 2 {
@@ -101,7 +101,7 @@ func makedag(ctx *cli.Context) error {
 	if err != nil {
 		utils.Fatalf("Invalid block number: %v", err)
 	}
-	ethash.MakeDataset(block, args[1])
+	sochash.MakeDataset(block, args[1])
 
 	return nil
 }
@@ -113,8 +113,8 @@ func version(ctx *cli.Context) error {
 		fmt.Println("Git Commit:", gitCommit)
 	}
 	fmt.Println("Architecture:", runtime.GOARCH)
-	fmt.Println("Protocol Versions:", eth.ProtocolVersions)
-	fmt.Println("Network Id:", eth.DefaultConfig.NetworkId)
+	fmt.Println("Protocol Versions:", soc.ProtocolVersions)
+	fmt.Println("Network Id:", soc.DefaultConfig.NetworkId)
 	fmt.Println("Go Version:", runtime.Version())
 	fmt.Println("Operating System:", runtime.GOOS)
 	fmt.Printf("GOPATH=%s\n", os.Getenv("GOPATH"))

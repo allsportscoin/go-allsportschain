@@ -26,7 +26,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/rawdb"
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/crypto/sha3"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/log"
 	"github.com/allsportschain/go-allsportschain/trie"
 )
@@ -324,7 +324,7 @@ func (s *stateSync) loop() (err error) {
 }
 
 func (s *stateSync) commit(force bool) error {
-	if !force && s.bytesUncommitted < ethdb.IdealBatchSize {
+	if !force && s.bytesUncommitted < socdb.IdealBatchSize {
 		return nil
 	}
 	start := time.Now()

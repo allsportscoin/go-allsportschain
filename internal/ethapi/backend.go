@@ -27,8 +27,8 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/core/vm"
-	"github.com/allsportschain/go-allsportschain/eth/downloader"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/soc/downloader"
+	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/rpc"
@@ -41,7 +41,7 @@ type Backend interface {
 	Downloader() *downloader.Downloader
 	ProtocolVersion() int
 	SuggestPrice(ctx context.Context) (*big.Int, error)
-	ChainDb() ethdb.Database
+	ChainDb() socdb.Database
 	EventMux() *event.TypeMux
 	AccountManager() *accounts.Manager
 

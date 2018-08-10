@@ -30,11 +30,11 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/bloombits"
 	"github.com/allsportschain/go-allsportschain/core/rawdb"
 	"github.com/allsportschain/go-allsportschain/core/types"
-	"github.com/allsportschain/go-allsportschain/eth"
-	"github.com/allsportschain/go-allsportschain/eth/downloader"
-	"github.com/allsportschain/go-allsportschain/eth/filters"
-	"github.com/allsportschain/go-allsportschain/eth/gasprice"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/soc"
+	"github.com/allsportschain/go-allsportschain/soc/downloader"
+	"github.com/allsportschain/go-allsportschain/soc/filters"
+	"github.com/allsportschain/go-allsportschain/soc/gasprice"
+	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/internal/ethapi"
 	"github.com/allsportschain/go-allsportschain/light"
@@ -47,7 +47,7 @@ import (
 )
 
 type LightEthereum struct {
-	config *eth.Config
+	config *soc.Config
 
 	odr         *LesOdr
 	relay       *LesTxRelay
@@ -63,7 +63,7 @@ type LightEthereum struct {
 	reqDist         *requestDistributor
 	retriever       *retrieveManager
 	// DB interfaces
-	chainDb ethdb.Database // Block chain database
+	chainDb socdb.Database // Block chain database
 
 	bloomRequests                              chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
 	bloomIndexer, chtIndexer, bloomTrieIndexer *core.ChainIndexer
@@ -80,8 +80,8 @@ type LightEthereum struct {
 	wg sync.WaitGroup
 }
 
-func New(ctx *node.ServiceContext, config *eth.Config) (*LightEthereum, error) {
-	chainDb, err := eth.CreateDB(ctx, config, "lightchaindata")
+func New(ctx *node.ServiceContext, config *soc.Config) (*LightEthereum, error) {
+	chainDb, err := soc.CreateDB(ctx, config, "lightchaindata")
 	if err != nil {
 		return nil, err
 	}
@@ -102,11 +102,11 @@ func New(ctx *node.ServiceContext, config *eth.Config) (*LightEthereum, error) {
 		peers:            peers,
 		reqDist:          newRequestDistributor(peers, quitSync),
 		accountManager:   ctx.AccountManager,
-		engine:           eth.CreateConsensusEngine(ctx, &config.Ethash, chainConfig, chainDb),
+		engine:           soc.CreateConsensusEngine(ctx, &config.Sochash, chainConfig, chainDb),
 		shutdownChan:     make(chan bool),
 		networkId:        config.NetworkId,
 		bloomRequests:    make(chan chan *bloombits.Retrieval),
-		bloomIndexer:     eth.NewBloomIndexer(chainDb, light.BloomTrieFrequency),
+		bloomIndexer:     soc.NewBloomIndexer(chainDb, light.BloomTrieFrequency),
 		chtIndexer:       light.NewChtIndexer(chainDb, true),
 		bloomTrieIndexer: light.NewBloomTrieIndexer(chainDb, true),
 	}

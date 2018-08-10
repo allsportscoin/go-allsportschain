@@ -18,17 +18,17 @@ package socclient
 
 import "github.com/allsportschain/go-allsportschain"
 
-// Verify that Client implements the ethereum interfaces.
+// Verify that Client implements the allsportschain interfaces.
 var (
-	_ = ethereum.ChainReader(&Client{})
-	_ = ethereum.TransactionReader(&Client{})
-	_ = ethereum.ChainStateReader(&Client{})
-	_ = ethereum.ChainSyncReader(&Client{})
-	_ = ethereum.ContractCaller(&Client{})
-	_ = ethereum.GasEstimator(&Client{})
-	_ = ethereum.GasPricer(&Client{})
-	_ = ethereum.LogFilterer(&Client{})
-	_ = ethereum.PendingStateReader(&Client{})
-	// _ = ethereum.PendingStateEventer(&Client{})
-	_ = ethereum.PendingContractCaller(&Client{})
+	_ = allsportschain.ChainReader(&Client{})
+	_ = allsportschain.TransactionReader(&Client{})
+	_ = allsportschain.ChainStateReader(&Client{})
+	_ = allsportschain.ChainSyncReader(&Client{})
+	_ = allsportschain.ContractCaller(&Client{})
+	_ = allsportschain.GasEstimator(&Client{})
+	_ = allsportschain.GasPricer(&Client{})
+	_ = allsportschain.LogFilterer(&Client{})
+	_ = allsportschain.PendingStateReader(&Client{})
+	// _ = allsportschain.PendingStateEventer(&Client{})
+	_ = allsportschain.PendingContractCaller(&Client{})
 )

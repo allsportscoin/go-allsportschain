@@ -31,7 +31,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/vm"
 	"github.com/allsportschain/go-allsportschain/soc/downloader"
 	"github.com/allsportschain/go-allsportschain/soc/gasprice"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/rpc"
@@ -205,7 +205,7 @@ func (b *EthAPIBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	return b.gpo.SuggestPrice(ctx)
 }
 
-func (b *EthAPIBackend) ChainDb() ethdb.Database {
+func (b *EthAPIBackend) ChainDb() socdb.Database {
 	return b.eth.ChainDb()
 }
 

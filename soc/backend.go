@@ -30,7 +30,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common/hexutil"
 	"github.com/allsportschain/go-allsportschain/consensus"
 	"github.com/allsportschain/go-allsportschain/consensus/clique"
-	"github.com/allsportschain/go-allsportschain/consensus/ethash"
+	"github.com/allsportschain/go-allsportschain/consensus/sochash"
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/core/bloombits"
 	"github.com/allsportschain/go-allsportschain/core/rawdb"
@@ -39,7 +39,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/soc/downloader"
 	"github.com/allsportschain/go-allsportschain/soc/filters"
 	"github.com/allsportschain/go-allsportschain/soc/gasprice"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/internal/ethapi"
 	"github.com/allsportschain/go-allsportschain/log"
@@ -73,7 +73,7 @@ type Ethereum struct {
 	lesServer       LesServer
 
 	// DB interfaces
-	chainDb ethdb.Database // Block chain database
+	chainDb socdb.Database // Block chain database
 
 	eventMux       *event.TypeMux
 	engine         consensus.Engine
@@ -124,11 +124,11 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		chainConfig:    chainConfig,
 		eventMux:       ctx.EventMux,
 		accountManager: ctx.AccountManager,
-		engine:         CreateConsensusEngine(ctx, &config.Ethash, chainConfig, chainDb),
+		engine:         CreateConsensusEngine(ctx, &config.Sochash, chainConfig, chainDb),
 		shutdownChan:   make(chan bool),
 		networkID:      config.NetworkId,
 		gasPrice:       config.GasPrice,
-		etherbase:      config.Etherbase,
+		etherbase:      config.Socerbase,
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
 		bloomIndexer:   NewBloomIndexer(chainDb, params.BloomBitsBlocks),
 	}
@@ -197,36 +197,36 @@ func makeExtraData(extra []byte) []byte {
 }
 
 // CreateDB creates the chain database.
-func CreateDB(ctx *node.ServiceContext, config *Config, name string) (ethdb.Database, error) {
+func CreateDB(ctx *node.ServiceContext, config *Config, name string) (socdb.Database, error) {
 	db, err := ctx.OpenDatabase(name, config.DatabaseCache, config.DatabaseHandles)
 	if err != nil {
 		return nil, err
 	}
-	if db, ok := db.(*ethdb.LDBDatabase); ok {
+	if db, ok := db.(*socdb.LDBDatabase); ok {
 		db.Meter("eth/db/chaindata/")
 	}
 	return db, nil
 }
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
-func CreateConsensusEngine(ctx *node.ServiceContext, config *ethash.Config, chainConfig *params.ChainConfig, db ethdb.Database) consensus.Engine {
+func CreateConsensusEngine(ctx *node.ServiceContext, config *sochash.Config, chainConfig *params.ChainConfig, db socdb.Database) consensus.Engine {
 	// If proof-of-authority is requested, set it up
 	if chainConfig.Clique != nil {
 		return clique.New(chainConfig.Clique, db)
 	}
 	// Otherwise assume proof-of-work
 	switch config.PowMode {
-	case ethash.ModeFake:
+	case sochash.ModeFake:
 		log.Warn("Ethash used in fake mode")
-		return ethash.NewFaker()
-	case ethash.ModeTest:
+		return sochash.NewFaker()
+	case sochash.ModeTest:
 		log.Warn("Ethash used in test mode")
-		return ethash.NewTester()
-	case ethash.ModeShared:
+		return sochash.NewTester()
+	case sochash.ModeShared:
 		log.Warn("Ethash used in shared mode")
-		return ethash.NewShared()
+		return sochash.NewShared()
 	default:
-		engine := ethash.New(ethash.Config{
+		engine := sochash.New(sochash.Config{
 			CacheDir:       ctx.ResolvePath(config.CacheDir),
 			CachesInMem:    config.CachesInMem,
 			CachesOnDisk:   config.CachesOnDisk,
@@ -323,13 +323,13 @@ func (s *Ethereum) Etherbase() (eb common.Address, err error) {
 	return common.Address{}, fmt.Errorf("etherbase must be explicitly specified")
 }
 
-// SetEtherbase sets the mining reward address.
-func (s *Ethereum) SetEtherbase(etherbase common.Address) {
+// SetSocerbase sets the mining reward address.
+func (s *Ethereum) SetSocerbase(etherbase common.Address) {
 	s.lock.Lock()
 	s.etherbase = etherbase
 	s.lock.Unlock()
 
-	s.miner.SetEtherbase(etherbase)
+	s.miner.SetSocerbase(etherbase)
 }
 
 func (s *Ethereum) StartMining(local bool) error {
@@ -366,7 +366,7 @@ func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
 func (s *Ethereum) TxPool() *core.TxPool               { return s.txPool }
 func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
 func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
-func (s *Ethereum) ChainDb() ethdb.Database            { return s.chainDb }
+func (s *Ethereum) ChainDb() socdb.Database            { return s.chainDb }
 func (s *Ethereum) IsListening() bool                  { return true } // Always listening
 func (s *Ethereum) EthVersion() int                    { return int(s.protocolManager.SubProtocols[0].Version) }
 func (s *Ethereum) NetVersion() uint64                 { return s.networkID }

@@ -32,7 +32,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/params"
-	"hash"
+	//"hash"
 )
 
 // Ethash proof-of-work protocol constants.

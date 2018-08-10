@@ -29,9 +29,9 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/core/vm"
-	"github.com/allsportschain/go-allsportschain/eth/downloader"
-	"github.com/allsportschain/go-allsportschain/eth/gasprice"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/soc/downloader"
+	"github.com/allsportschain/go-allsportschain/soc/gasprice"
+	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/light"
 	"github.com/allsportschain/go-allsportschain/params"
@@ -172,7 +172,7 @@ func (b *LesApiBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	return b.gpo.SuggestPrice(ctx)
 }
 
-func (b *LesApiBackend) ChainDb() ethdb.Database {
+func (b *LesApiBackend) ChainDb() socdb.Database {
 	return b.eth.chainDb
 }
 

@@ -28,7 +28,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/consensus"
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/log"
-	"hash"
+	//"hash"
 )
 
 // Seal implements consensus.Engine, attempting to find a nonce that satisfies

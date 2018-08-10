@@ -28,7 +28,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/bloombits"
 	"github.com/allsportschain/go-allsportschain/core/rawdb"
 	"github.com/allsportschain/go-allsportschain/core/types"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/node"
 )
@@ -67,7 +67,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 	benchDataDir := node.DefaultDataDir() + "/geth/chaindata"
 	fmt.Println("Running bloombits benchmark   section size:", sectionSize)
 
-	db, err := ethdb.NewLDBDatabase(benchDataDir, 128, 1024)
+	db, err := socdb.NewLDBDatabase(benchDataDir, 128, 1024)
 	if err != nil {
 		b.Fatalf("error opening database at %v: %v", benchDataDir, err)
 	}
@@ -129,7 +129,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 	for i := 0; i < benchFilterCnt; i++ {
 		if i%20 == 0 {
 			db.Close()
-			db, _ = ethdb.NewLDBDatabase(benchDataDir, 128, 1024)
+			db, _ = socdb.NewLDBDatabase(benchDataDir, 128, 1024)
 			backend = &testBackend{mux, db, cnt, new(event.Feed), new(event.Feed), new(event.Feed), new(event.Feed)}
 		}
 		var addr common.Address
@@ -146,8 +146,8 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 	db.Close()
 }
 
-func forEachKey(db ethdb.Database, startPrefix, endPrefix []byte, fn func(key []byte)) {
-	it := db.(*ethdb.LDBDatabase).NewIterator()
+func forEachKey(db socdb.Database, startPrefix, endPrefix []byte, fn func(key []byte)) {
+	it := db.(*socdb.LDBDatabase).NewIterator()
 	it.Seek(startPrefix)
 	for it.Valid() {
 		key := it.Key()
@@ -166,7 +166,7 @@ func forEachKey(db ethdb.Database, startPrefix, endPrefix []byte, fn func(key []
 
 var bloomBitsPrefix = []byte("bloomBits-")
 
-func clearBloomBits(db ethdb.Database) {
+func clearBloomBits(db socdb.Database) {
 	fmt.Println("Clearing bloombits data...")
 	forEachKey(db, bloomBitsPrefix, bloomBitsPrefix, func(key []byte) {
 		db.Delete(key)
@@ -176,7 +176,7 @@ func clearBloomBits(db ethdb.Database) {
 func BenchmarkNoBloomBits(b *testing.B) {
 	benchDataDir := node.DefaultDataDir() + "/geth/chaindata"
 	fmt.Println("Running benchmark without bloombits")
-	db, err := ethdb.NewLDBDatabase(benchDataDir, 128, 1024)
+	db, err := socdb.NewLDBDatabase(benchDataDir, 128, 1024)
 	if err != nil {
 		b.Fatalf("error opening database at %v: %v", benchDataDir, err)
 	}
