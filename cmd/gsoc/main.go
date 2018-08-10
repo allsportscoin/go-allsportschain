@@ -33,7 +33,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/accounts/keystore"
 	"github.com/allsportschain/go-allsportschain/cmd/utils"
 	"github.com/allsportschain/go-allsportschain/console"
-	"github.com/allsportschain/go-allsportschain/eth"
+	"github.com/allsportschain/go-allsportschain/soc"
 	"github.com/allsportschain/go-allsportschain/socclient"
 	"github.com/allsportschain/go-allsportschain/internal/debug"
 	"github.com/allsportschain/go-allsportschain/log"
@@ -324,7 +324,7 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 		if ctx.GlobalBool(utils.LightModeFlag.Name) || ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
 		}
-		var ethereum *eth.Ethereum
+		var ethereum *soc.Ethereum
 		if err := stack.Service(&ethereum); err != nil {
 			utils.Fatalf("Ethereum service not running: %v", err)
 		}

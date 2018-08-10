@@ -21,7 +21,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/allsportschain/go-allsportschain/eth/tracers/internal/tracers"
+	"github.com/allsportschain/go-allsportschain/soc/tracers/internal/tracers"
 )
 
 // all contains all the built in JavaScript tracers by name.
