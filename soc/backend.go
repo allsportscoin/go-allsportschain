@@ -128,11 +128,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Allsportschain, error) {
 		shutdownChan:   make(chan bool),
 		networkID:      config.NetworkId,
 		gasPrice:       config.GasPrice,
-<<<<<<< HEAD
 		socerbase:      config.Socerbase,
-=======
-		etherbase:      config.Socerbase,
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
 		bloomIndexer:   NewBloomIndexer(chainDb, params.BloomBitsBlocks),
 	}
@@ -207,20 +203,12 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (socdb.Data
 		return nil, err
 	}
 	if db, ok := db.(*socdb.LDBDatabase); ok {
-<<<<<<< HEAD
 		db.Meter("soc/db/chaindata/")
-=======
-		db.Meter("eth/db/chaindata/")
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 	}
 	return db, nil
 }
 
-<<<<<<< HEAD
 // CreateConsensusEngine creates the required type of consensus engine instance for an Allsportschain service
-=======
-// CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 func CreateConsensusEngine(ctx *node.ServiceContext, config *sochash.Config, chainConfig *params.ChainConfig, db socdb.Database) consensus.Engine {
 	// If proof-of-authority is requested, set it up
 	if chainConfig.Clique != nil {
@@ -229,7 +217,6 @@ func CreateConsensusEngine(ctx *node.ServiceContext, config *sochash.Config, cha
 	// Otherwise assume proof-of-work
 	switch config.PowMode {
 	case sochash.ModeFake:
-<<<<<<< HEAD
 		log.Warn("Sochash used in fake mode")
 		return sochash.NewFaker()
 	case sochash.ModeTest:
@@ -237,15 +224,6 @@ func CreateConsensusEngine(ctx *node.ServiceContext, config *sochash.Config, cha
 		return sochash.NewTester()
 	case sochash.ModeShared:
 		log.Warn("Sochash used in shared mode")
-=======
-		log.Warn("Ethash used in fake mode")
-		return sochash.NewFaker()
-	case sochash.ModeTest:
-		log.Warn("Ethash used in test mode")
-		return sochash.NewTester()
-	case sochash.ModeShared:
-		log.Warn("Ethash used in shared mode")
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 		return sochash.NewShared()
 	default:
 		engine := sochash.New(sochash.Config{
@@ -346,20 +324,12 @@ func (s *Allsportschain) Socerbase() (eb common.Address, err error) {
 }
 
 // SetSocerbase sets the mining reward address.
-<<<<<<< HEAD
 func (s *Allsportschain) SetSocerbase(socerbase common.Address) {
-=======
-func (s *Ethereum) SetSocerbase(etherbase common.Address) {
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 	s.lock.Lock()
 	s.socerbase = socerbase
 	s.lock.Unlock()
 
-<<<<<<< HEAD
 	s.miner.SetSocerbase(socerbase)
-=======
-	s.miner.SetSocerbase(etherbase)
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 }
 
 func (s *Allsportschain) StartMining(local bool) error {
@@ -387,7 +357,6 @@ func (s *Allsportschain) StartMining(local bool) error {
 	return nil
 }
 
-<<<<<<< HEAD
 func (s *Allsportschain) StopMining()         { s.miner.Stop() }
 func (s *Allsportschain) IsMining() bool      { return s.miner.Mining() }
 func (s *Allsportschain) Miner() *miner.Miner { return s.miner }
@@ -402,22 +371,6 @@ func (s *Allsportschain) IsListening() bool                  { return true } // 
 func (s *Allsportschain) SocVersion() int                    { return int(s.protocolManager.SubProtocols[0].Version) }
 func (s *Allsportschain) NetVersion() uint64                 { return s.networkID }
 func (s *Allsportschain) Downloader() *downloader.Downloader { return s.protocolManager.downloader }
-=======
-func (s *Ethereum) StopMining()         { s.miner.Stop() }
-func (s *Ethereum) IsMining() bool      { return s.miner.Mining() }
-func (s *Ethereum) Miner() *miner.Miner { return s.miner }
-
-func (s *Ethereum) AccountManager() *accounts.Manager  { return s.accountManager }
-func (s *Ethereum) BlockChain() *core.BlockChain       { return s.blockchain }
-func (s *Ethereum) TxPool() *core.TxPool               { return s.txPool }
-func (s *Ethereum) EventMux() *event.TypeMux           { return s.eventMux }
-func (s *Ethereum) Engine() consensus.Engine           { return s.engine }
-func (s *Ethereum) ChainDb() socdb.Database            { return s.chainDb }
-func (s *Ethereum) IsListening() bool                  { return true } // Always listening
-func (s *Ethereum) EthVersion() int                    { return int(s.protocolManager.SubProtocols[0].Version) }
-func (s *Ethereum) NetVersion() uint64                 { return s.networkID }
-func (s *Ethereum) Downloader() *downloader.Downloader { return s.protocolManager.downloader }
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 
 // Protocols implements node.Service, returning all the currently configured
 // network protocols to start.

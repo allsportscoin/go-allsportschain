@@ -31,7 +31,6 @@ import (
 	"github.com/allsportschain/go-allsportschain/crypto"
 	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/params"
-	"hash"
 )
 
 var (

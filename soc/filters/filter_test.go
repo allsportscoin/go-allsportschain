@@ -32,7 +32,6 @@ import (
 	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/params"
-	"hash"
 )
 
 func makeReceipt(addr common.Address) *types.Receipt {
