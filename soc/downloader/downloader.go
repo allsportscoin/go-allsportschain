@@ -1517,7 +1517,27 @@ func (d *Downloader) commitPivotBlock(result *fetchResult) error {
 	if err := d.blockchain.FastSyncCommitHead(block.Hash()); err != nil {
 		return err
 	}
+	if err := d.syncDposContextState(block.Header().DposContext); err != nil {
+		return err
+	}
 	atomic.StoreInt32(&d.committed, 1)
+	return nil
+}
+
+// sync current epoch dpos context info
+func (d *Downloader) syncDposContextState(context *types.DposContextProto) error {
+	roots := []common.Hash{
+		context.CandidateHash,
+		context.DelegateHash,
+		context.VoteHash,
+		context.EpochHash,
+		context.MintCntHash,
+	}
+	for _, root := range roots {
+		if err := d.syncState(root).Wait(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
