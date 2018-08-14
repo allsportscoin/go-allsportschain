@@ -70,6 +70,7 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 type Header struct {
 	ParentHash  common.Hash       `json:"parentHash"       gencodec:"required"`
 	UncleHash   common.Hash       `json:"sha3Uncles"       gencodec:"required"`
+	Validator   common.Address    `json:"validator"        gencodec:"required"`
 	Coinbase    common.Address    `json:"miner"            gencodec:"required"`
 	Root        common.Hash       `json:"stateRoot"        gencodec:"required"`
 	TxHash      common.Hash       `json:"transactionsRoot" gencodec:"required"`
@@ -109,10 +110,11 @@ func (h *Header) HashNoNonce() common.Hash {
 		h.ParentHash,
 		h.UncleHash,
 		h.Coinbase,
+		h.Validator,
 		h.Root,
 		h.TxHash,
 		h.ReceiptHash,
-		h.dposContext,
+		h.DposContext,
 		h.Bloom,
 		h.Difficulty,
 		h.Number,
@@ -323,6 +325,7 @@ func (b *Block) MixDigest() common.Hash   { return b.header.MixDigest }
 func (b *Block) Nonce() uint64            { return binary.BigEndian.Uint64(b.header.Nonce[:]) }
 func (b *Block) Bloom() Bloom             { return b.header.Bloom }
 func (b *Block) Coinbase() common.Address { return b.header.Coinbase }
+func (b *Block) Validator() common.Address { return b.header.Validator}
 func (b *Block) Root() common.Hash        { return b.header.Root }
 func (b *Block) ParentHash() common.Hash  { return b.header.ParentHash }
 func (b *Block) TxHash() common.Hash      { return b.header.TxHash }
