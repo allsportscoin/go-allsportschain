@@ -34,6 +34,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/trie"
+	"hash"
 )
 
 var (

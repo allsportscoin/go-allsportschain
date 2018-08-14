@@ -36,6 +36,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/rlp"
 	"github.com/allsportschain/go-allsportschain/trie"
+	"hash"
 )
 
 func expectResponse(r p2p.MsgReader, msgcode, reqID, bv uint64, data interface{}) error {

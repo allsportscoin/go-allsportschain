@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package sochash implements the sochash proof-of-work consensus engine.
+// Package ethash implements the ethash proof-of-work consensus engine.
 package sochash
 
 import (
@@ -164,7 +164,7 @@ func newlru(what string, maxItems int, new func(epoch uint64) interface{}) *lru 
 		maxItems = 1
 	}
 	cache, _ := simplelru.NewLRU(maxItems, func(key, value interface{}) {
-		log.Trace("Evicted sochash "+what, "epoch", key)
+		log.Trace("Evicted ethash "+what, "epoch", key)
 	})
 	return &lru{what: what, new: new, cache: cache}
 }
@@ -182,14 +182,14 @@ func (lru *lru) get(epoch uint64) (item, future interface{}) {
 		if lru.future > 0 && lru.future == epoch {
 			item = lru.futureItem
 		} else {
-			log.Trace("Requiring new sochash "+lru.what, "epoch", epoch)
+			log.Trace("Requiring new ethash "+lru.what, "epoch", epoch)
 			item = lru.new(epoch)
 		}
 		lru.cache.Add(epoch, item)
 	}
 	// Update the 'future item' if epoch is larger than previously seen.
 	if epoch < maxEpoch-1 && lru.future < epoch+1 {
-		log.Trace("Requiring new future sochash "+lru.what, "epoch", epoch+1)
+		log.Trace("Requiring new future ethash "+lru.what, "epoch", epoch+1)
 		future = lru.new(epoch + 1)
 		lru.future = epoch + 1
 		lru.futureItem = future
@@ -197,7 +197,7 @@ func (lru *lru) get(epoch uint64) (item, future interface{}) {
 	return item, future
 }
 
-// cache wraps an sochash cache with some metadata to allow easier concurrent use.
+// cache wraps an ethash cache with some metadata to allow easier concurrent use.
 type cache struct {
 	epoch uint64    // Epoch for which this cache is relevant
 	dump  *os.File  // File descriptor of the memory mapped cache
@@ -206,7 +206,7 @@ type cache struct {
 	once  sync.Once // Ensures the cache is generated only once
 }
 
-// newCache creates a new sochash verification cache and returns it as a plain Go
+// newCache creates a new ethash verification cache and returns it as a plain Go
 // interface to be usable in an LRU cache.
 func newCache(epoch uint64) interface{} {
 	return &cache{epoch: epoch}
@@ -242,15 +242,15 @@ func (c *cache) generate(dir string, limit int, test bool) {
 		var err error
 		c.dump, c.mmap, c.cache, err = memoryMap(path)
 		if err == nil {
-			logger.Debug("Loaded old sochash cache from disk")
+			logger.Debug("Loaded old ethash cache from disk")
 			return
 		}
-		logger.Debug("Failed to load old sochash cache", "err", err)
+		logger.Debug("Failed to load old ethash cache", "err", err)
 
 		// No previous cache available, create a new cache file to fill
 		c.dump, c.mmap, c.cache, err = memoryMapAndGenerate(path, size, func(buffer []uint32) { generateCache(buffer, c.epoch, seed) })
 		if err != nil {
-			logger.Error("Failed to generate mapped sochash cache", "err", err)
+			logger.Error("Failed to generate mapped ethash cache", "err", err)
 
 			c.cache = make([]uint32, size/4)
 			generateCache(c.cache, c.epoch, seed)
@@ -273,7 +273,7 @@ func (c *cache) finalizer() {
 	}
 }
 
-// dataset wraps an sochash dataset with some metadata to allow easier concurrent use.
+// dataset wraps an ethash dataset with some metadata to allow easier concurrent use.
 type dataset struct {
 	epoch   uint64    // Epoch for which this cache is relevant
 	dump    *os.File  // File descriptor of the memory mapped cache
@@ -282,7 +282,7 @@ type dataset struct {
 	once    sync.Once // Ensures the cache is generated only once
 }
 
-// newDataset creates a new sochash mining dataset and returns it as a plain Go
+// newDataset creates a new ethash mining dataset and returns it as a plain Go
 // interface to be usable in an LRU cache.
 func newDataset(epoch uint64) interface{} {
 	return &dataset{epoch: epoch}
@@ -322,10 +322,10 @@ func (d *dataset) generate(dir string, limit int, test bool) {
 		var err error
 		d.dump, d.mmap, d.dataset, err = memoryMap(path)
 		if err == nil {
-			logger.Debug("Loaded old sochash dataset from disk")
+			logger.Debug("Loaded old ethash dataset from disk")
 			return
 		}
-		logger.Debug("Failed to load old sochash dataset", "err", err)
+		logger.Debug("Failed to load old ethash dataset", "err", err)
 
 		// No previous dataset available, create a new dataset file to fill
 		cache := make([]uint32, csize/4)
@@ -333,7 +333,7 @@ func (d *dataset) generate(dir string, limit int, test bool) {
 
 		d.dump, d.mmap, d.dataset, err = memoryMapAndGenerate(path, dsize, func(buffer []uint32) { generateDataset(buffer, d.epoch, cache) })
 		if err != nil {
-			logger.Error("Failed to generate mapped sochash dataset", "err", err)
+			logger.Error("Failed to generate mapped ethash dataset", "err", err)
 
 			d.dataset = make([]uint32, dsize/2)
 			generateDataset(d.dataset, d.epoch, cache)
@@ -356,19 +356,19 @@ func (d *dataset) finalizer() {
 	}
 }
 
-// MakeCache generates a new sochash cache and optionally stores it to disk.
+// MakeCache generates a new ethash cache and optionally stores it to disk.
 func MakeCache(block uint64, dir string) {
 	c := cache{epoch: block / epochLength}
 	c.generate(dir, math.MaxInt32, false)
 }
 
-// MakeDataset generates a new sochash dataset and optionally stores it to disk.
+// MakeDataset generates a new ethash dataset and optionally stores it to disk.
 func MakeDataset(block uint64, dir string) {
 	d := dataset{epoch: block / epochLength}
 	d.generate(dir, math.MaxInt32, false)
 }
 
-// Mode defines the type and amount of PoW verification an sochash engine makes.
+// Mode defines the type and amount of PoW verification an ethash engine makes.
 type Mode uint
 
 const (
@@ -379,7 +379,7 @@ const (
 	ModeFullFake
 )
 
-// Config are the configuration parameters of the sochash.
+// Config are the configuration parameters of the ethash.
 type Config struct {
 	CacheDir       string
 	CachesInMem    int
@@ -390,7 +390,7 @@ type Config struct {
 	PowMode        Mode
 }
 
-// Ethash is a consensus engine based on proof-of-work implementing the sochash
+// Ethash is a consensus engine based on proof-of-work implementing the ethash
 // algorithm.
 type Sochash struct {
 	config Config
@@ -412,17 +412,17 @@ type Sochash struct {
 	lock sync.Mutex // Ensures thread safety for the in-memory caches and mining fields
 }
 
-// New creates a full sized sochash PoW scheme.
+// New creates a full sized ethash PoW scheme.
 func New(config Config) *Sochash {
 	if config.CachesInMem <= 0 {
-		log.Warn("One sochash cache must always be in memory", "requested", config.CachesInMem)
+		log.Warn("One ethash cache must always be in memory", "requested", config.CachesInMem)
 		config.CachesInMem = 1
 	}
 	if config.CacheDir != "" && config.CachesOnDisk > 0 {
-		log.Info("Disk storage enabled for sochash caches", "dir", config.CacheDir, "count", config.CachesOnDisk)
+		log.Info("Disk storage enabled for ethash caches", "dir", config.CacheDir, "count", config.CachesOnDisk)
 	}
 	if config.DatasetDir != "" && config.DatasetsOnDisk > 0 {
-		log.Info("Disk storage enabled for sochash DAGs", "dir", config.DatasetDir, "count", config.DatasetsOnDisk)
+		log.Info("Disk storage enabled for ethash DAGs", "dir", config.DatasetDir, "count", config.DatasetsOnDisk)
 	}
 	return &Sochash{
 		config:   config,
@@ -433,13 +433,13 @@ func New(config Config) *Sochash {
 	}
 }
 
-// NewTester creates a small sized sochash PoW scheme useful only for testing
+// NewTester creates a small sized ethash PoW scheme useful only for testing
 // purposes.
 func NewTester() *Sochash {
 	return New(Config{CachesInMem: 1, PowMode: ModeTest})
 }
 
-// NewFaker creates a sochash consensus engine with a fake PoW scheme that accepts
+// NewFaker creates a ethash consensus engine with a fake PoW scheme that accepts
 // all blocks' seal as valid, though they still have to conform to the Ethereum
 // consensus rules.
 func NewFaker() *Sochash {
@@ -450,7 +450,7 @@ func NewFaker() *Sochash {
 	}
 }
 
-// NewFakeFailer creates a sochash consensus engine with a fake PoW scheme that
+// NewFakeFailer creates a ethash consensus engine with a fake PoW scheme that
 // accepts all blocks as valid apart from the single one specified, though they
 // still have to conform to the Ethereum consensus rules.
 func NewFakeFailer(fail uint64) *Sochash {
@@ -462,7 +462,7 @@ func NewFakeFailer(fail uint64) *Sochash {
 	}
 }
 
-// NewFakeDelayer creates a sochash consensus engine with a fake PoW scheme that
+// NewFakeDelayer creates a ethash consensus engine with a fake PoW scheme that
 // accepts all blocks as valid, but delays verifications by some time, though
 // they still have to conform to the Ethereum consensus rules.
 func NewFakeDelayer(delay time.Duration) *Sochash {
@@ -474,7 +474,7 @@ func NewFakeDelayer(delay time.Duration) *Sochash {
 	}
 }
 
-// NewFullFaker creates an sochash consensus engine with a full fake scheme that
+// NewFullFaker creates an ethash consensus engine with a full fake scheme that
 // accepts all blocks as valid, without checking any consensus rules whatsoever.
 func NewFullFaker() *Sochash {
 	return &Sochash{
@@ -484,7 +484,7 @@ func NewFullFaker() *Sochash {
 	}
 }
 
-// NewShared creates a full sized sochash PoW shared between all requesters running
+// NewShared creates a full sized ethash PoW shared between all requesters running
 // in the same process.
 func NewShared() *Sochash {
 	return &Sochash{shared: sharedEthash}

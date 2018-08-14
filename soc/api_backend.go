@@ -205,8 +205,13 @@ func (b *SocAPIBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	return b.gpo.SuggestPrice(ctx)
 }
 
+<<<<<<< HEAD
 func (b *SocAPIBackend) ChainDb() socdb.Database {
 	return b.soc.ChainDb()
+=======
+func (b *EthAPIBackend) ChainDb() socdb.Database {
+	return b.eth.ChainDb()
+>>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 }
 
 func (b *SocAPIBackend) EventMux() *event.TypeMux {
