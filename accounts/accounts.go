@@ -20,16 +20,16 @@ package accounts
 import (
 	"math/big"
 
-	ethereum "github.com/allsportschain/go-allsportschain"
+	allsportschain "github.com/allsportschain/go-allsportschain"
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/event"
 )
 
-// Account represents an Ethereum account located at a specific location defined
+// Account represents an Allsportschain account located at a specific location defined
 // by the optional URL field.
 type Account struct {
-	Address common.Address `json:"address"` // Ethereum account address derived from the key
+	Address common.Address `json:"address"` // Allsportschain account address derived from the key
 	URL     URL            `json:"url"`     // Optional resource locator within a backend
 }
 
@@ -85,7 +85,7 @@ type Wallet interface {
 	//
 	// You can disable automatic account discovery by calling SelfDerive with a nil
 	// chain state reader.
-	SelfDerive(base DerivationPath, chain ethereum.ChainStateReader)
+	SelfDerive(base DerivationPath, chain allsportschain.ChainStateReader)
 
 	// SignHash requests the wallet to sign the given hash.
 	//

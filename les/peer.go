@@ -28,7 +28,7 @@ import (
 
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/core/types"
-	"github.com/allsportschain/go-allsportschain/eth"
+	"github.com/allsportschain/go-allsportschain/soc"
 	"github.com/allsportschain/go-allsportschain/les/flowcontrol"
 	"github.com/allsportschain/go-allsportschain/light"
 	"github.com/allsportschain/go-allsportschain/p2p"
@@ -102,8 +102,8 @@ func (p *peer) queueSend(f func()) {
 }
 
 // Info gathers and returns a collection of metadata known about a peer.
-func (p *peer) Info() *eth.PeerInfo {
-	return &eth.PeerInfo{
+func (p *peer) Info() *soc.PeerInfo {
+	return &soc.PeerInfo{
 		Version:    p.version,
 		Difficulty: p.Td(),
 		Head:       fmt.Sprintf("%x", p.Head()),

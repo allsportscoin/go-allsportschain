@@ -26,7 +26,7 @@ import (
 
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/common/hexutil"
-	"github.com/allsportschain/go-allsportschain/consensus/ethash"
+	"github.com/allsportschain/go-allsportschain/consensus/sochash"
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/soc/downloader"
 	"github.com/allsportschain/go-allsportschain/soc/gasprice"
@@ -36,8 +36,8 @@ import (
 // DefaultConfig contains default settings for use on the Ethereum main net.
 var DefaultConfig = Config{
 	SyncMode: downloader.FastSync,
-	Ethash: ethash.Config{
-		CacheDir:       "ethash",
+	Sochash: sochash.Config{
+		CacheDir:       "sochash",
 		CachesInMem:    2,
 		CachesOnDisk:   3,
 		DatasetsInMem:  1,
@@ -65,9 +65,9 @@ func init() {
 		}
 	}
 	if runtime.GOOS == "windows" {
-		DefaultConfig.Ethash.DatasetDir = filepath.Join(home, "AppData", "Ethash")
+		DefaultConfig.Sochash.DatasetDir = filepath.Join(home, "AppData", "Sochash")
 	} else {
-		DefaultConfig.Ethash.DatasetDir = filepath.Join(home, ".ethash")
+		DefaultConfig.Sochash.DatasetDir = filepath.Join(home, ".sochash")
 	}
 }
 
@@ -95,13 +95,13 @@ type Config struct {
 	TrieTimeout        time.Duration
 
 	// Mining-related options
-	Etherbase    common.Address `toml:",omitempty"`
+	Socerbase    common.Address `toml:",omitempty"`
 	MinerThreads int            `toml:",omitempty"`
 	ExtraData    []byte         `toml:",omitempty"`
 	GasPrice     *big.Int
 
-	// Ethash options
-	Ethash ethash.Config
+	// Sochash options
+	Sochash sochash.Config
 
 	// Transaction pool options
 	TxPool core.TxPoolConfig

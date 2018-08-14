@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/allsportschain/go-allsportschain/core/rawdb"
-	"github.com/allsportschain/go-allsportschain/eth/downloader"
+	"github.com/allsportschain/go-allsportschain/soc/downloader"
 	"github.com/allsportschain/go-allsportschain/light"
 )
 

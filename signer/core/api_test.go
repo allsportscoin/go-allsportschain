@@ -32,7 +32,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/common/hexutil"
 	"github.com/allsportschain/go-allsportschain/core/types"
-	"github.com/allsportschain/go-allsportschain/internal/ethapi"
+	"github.com/allsportschain/go-allsportschain/internal/socapi"
 	"github.com/allsportschain/go-allsportschain/rlp"
 )
 
@@ -44,7 +44,7 @@ type HeadlessUI struct {
 func (ui *HeadlessUI) OnSignerStartup(info StartupInfo) {
 }
 
-func (ui *HeadlessUI) OnApprovedTx(tx ethapi.SignTransactionResult) {
+func (ui *HeadlessUI) OnApprovedTx(tx socapi.SignTransactionResult) {
 	fmt.Printf("OnApproved called")
 }
 
@@ -276,7 +276,7 @@ func TestSignTx(t *testing.T) {
 
 	var (
 		list      Accounts
-		res, res2 *ethapi.SignTransactionResult
+		res, res2 *socapi.SignTransactionResult
 		err       error
 	)
 

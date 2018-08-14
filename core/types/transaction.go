@@ -35,6 +35,16 @@ var (
 	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
 )
 
+type TxType uint8
+
+const {
+	Normal TxType = iota
+	Candidate
+	UnCandidate
+	Delegate
+	UnDelegate
+}
+
 type Transaction struct {
 	data txdata
 	// caches
@@ -49,6 +59,7 @@ type txdata struct {
 	GasLimit     uint64          `json:"gas"      gencodec:"required"`
 	Recipient    *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
 	Amount       *big.Int        `json:"value"    gencodec:"required"`
+	Type		 TxType          `json:"type"	  gencodec:"required"`
 	Payload      []byte          `json:"input"    gencodec:"required"`
 
 	// Signature values
@@ -65,21 +76,22 @@ type txdataMarshaling struct {
 	Price        *hexutil.Big
 	GasLimit     hexutil.Uint64
 	Amount       *hexutil.Big
+	Type         TxType
 	Payload      hexutil.Bytes
 	V            *hexutil.Big
 	R            *hexutil.Big
 	S            *hexutil.Big
 }
 
-func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, data)
+func NewTransaction(nonce uint64, to common.Address, amount *big.Int, txType TxType, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
+	return newTransaction(txType, nonce, &to, amount, gasLimit, gasPrice, data)
 }
 
 func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, data)
 }
 
-func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
+func newTransaction(txType TxType, nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)
 	}
@@ -88,6 +100,7 @@ func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit 
 		Recipient:    to,
 		Payload:      data,
 		Amount:       new(big.Int),
+		Type:		  txType,
 		GasLimit:     gasLimit,
 		Price:        new(big.Int),
 		V:            new(big.Int),
@@ -171,6 +184,7 @@ func (tx *Transaction) Data() []byte       { return common.CopyBytes(tx.data.Pay
 func (tx *Transaction) Gas() uint64        { return tx.data.GasLimit }
 func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
 func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
+func (tx *Transaction) TxType() *big.Int   { return tx.data.Type }
 func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool   { return true }
 
@@ -219,6 +233,7 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 		gasPrice:   new(big.Int).Set(tx.data.Price),
 		to:         tx.data.Recipient,
 		amount:     tx.data.Amount,
+		txType:     tx.data.Type,
 		data:       tx.data.Payload,
 		checkNonce: true,
 	}
@@ -383,19 +398,21 @@ type Message struct {
 	from       common.Address
 	nonce      uint64
 	amount     *big.Int
+	txType     TxType
 	gasLimit   uint64
 	gasPrice   *big.Int
 	data       []byte
 	checkNonce bool
 }
 
-func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
+func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, txType TxType, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
 	return Message{
 		from:       from,
 		to:         to,
 		nonce:      nonce,
 		amount:     amount,
-		gasLimit:   gasLimit,
+		txType:     amount,
+		gasLimit:   txType,
 		gasPrice:   gasPrice,
 		data:       data,
 		checkNonce: checkNonce,
@@ -410,3 +427,4 @@ func (m Message) Gas() uint64          { return m.gasLimit }
 func (m Message) Nonce() uint64        { return m.nonce }
 func (m Message) Data() []byte         { return m.data }
 func (m Message) CheckNonce() bool     { return m.checkNonce }
+func (m Message) Type() TxType         { return m.txType }

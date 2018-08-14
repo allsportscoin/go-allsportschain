@@ -33,7 +33,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/contracts/chequebook"
 	"github.com/allsportschain/go-allsportschain/contracts/ens"
-	"github.com/allsportschain/go-allsportschain/ethclient"
+	"github.com/allsportschain/go-allsportschain/socclient"
 	"github.com/allsportschain/go-allsportschain/metrics"
 	"github.com/allsportschain/go-allsportschain/p2p"
 	"github.com/allsportschain/go-allsportschain/p2p/discover"
@@ -112,7 +112,7 @@ func NewSwarm(config *api.Config, mockStore *mock.NodeStore) (self *Swarm, err e
 	var backend chequebook.Backend
 	if config.SwapAPI != "" && config.SwapEnabled {
 		log.Info("connecting to SWAP API", "url", config.SwapAPI)
-		backend, err = ethclient.Dial(config.SwapAPI)
+		backend, err = socclient.Dial(config.SwapAPI)
 		if err != nil {
 			return nil, fmt.Errorf("error connecting to SWAP API %s: %s", config.SwapAPI, err)
 		}
@@ -277,7 +277,7 @@ func parseEnsAPIAddress(s string) (tld, endpoint string, addr common.Address) {
 // ensClient provides functionality for api.ResolveValidator
 type ensClient struct {
 	*ens.ENS
-	*ethclient.Client
+	*socclient.Client
 }
 
 // newEnsClient creates a new ENS client for that is a consumer of
@@ -289,7 +289,7 @@ func newEnsClient(endpoint string, addr common.Address, config *api.Config, priv
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to ENS API %s: %s", endpoint, err)
 	}
-	ethClient := ethclient.NewClient(client)
+	socClient := socclient.NewClient(client)
 
 	ensRoot := config.EnsRoot
 	if addr != (common.Address{}) {
@@ -303,14 +303,14 @@ func newEnsClient(endpoint string, addr common.Address, config *api.Config, priv
 		}
 	}
 	transactOpts := bind.NewKeyedTransactor(privkey)
-	dns, err := ens.NewENS(transactOpts, ensRoot, ethClient)
+	dns, err := ens.NewENS(transactOpts, ensRoot, socClient)
 	if err != nil {
 		return nil, err
 	}
 	log.Debug(fmt.Sprintf("-> Swarm Domain Name Registrar %v @ address %v", endpoint, ensRoot.Hex()))
 	return &ensClient{
 		ENS:    dns,
-		Client: ethClient,
+		Client: socClient,
 	}, err
 }
 
@@ -326,7 +326,7 @@ func detectEnsAddr(client *rpc.Client) (common.Address, error) {
 		return common.Address{}, err
 	}
 
-	block, err := ethclient.NewClient(client).BlockByNumber(ctx, big.NewInt(0))
+	block, err := socclient.NewClient(client).BlockByNumber(ctx, big.NewInt(0))
 	if err != nil {
 		return common.Address{}, err
 	}

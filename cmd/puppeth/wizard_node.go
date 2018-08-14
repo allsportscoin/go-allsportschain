@@ -67,14 +67,14 @@ func (w *wizard) deployNode(boot bool) {
 		fmt.Printf("Where should data be stored on the remote machine? (default = %s)\n", infos.datadir)
 		infos.datadir = w.readDefaultString(infos.datadir)
 	}
-	if w.conf.Genesis.Config.Ethash != nil && !boot {
+	if w.conf.Genesis.Config.Sochash != nil && !boot {
 		fmt.Println()
-		if infos.ethashdir == "" {
+		if infos.sochashdir == "" {
 			fmt.Printf("Where should the ethash mining DAGs be stored on the remote machine?\n")
-			infos.ethashdir = w.readString()
+			infos.sochashdir = w.readString()
 		} else {
-			fmt.Printf("Where should the ethash mining DAGs be stored on the remote machine? (default = %s)\n", infos.ethashdir)
-			infos.ethashdir = w.readDefaultString(infos.ethashdir)
+			fmt.Printf("Where should the ethash mining DAGs be stored on the remote machine? (default = %s)\n", infos.sochashdir)
+			infos.sochashdir = w.readDefaultString(infos.sochashdir)
 		}
 	}
 	// Figure out which port to listen on
@@ -94,29 +94,29 @@ func (w *wizard) deployNode(boot bool) {
 
 	// Set a proper name to report on the stats page
 	fmt.Println()
-	if infos.ethstats == "" {
+	if infos.socstats == "" {
 		fmt.Printf("What should the node be called on the stats page?\n")
-		infos.ethstats = w.readString() + ":" + w.conf.ethstats
+		infos.socstats = w.readString() + ":" + w.conf.ethstats
 	} else {
-		fmt.Printf("What should the node be called on the stats page? (default = %s)\n", infos.ethstats)
-		infos.ethstats = w.readDefaultString(infos.ethstats) + ":" + w.conf.ethstats
+		fmt.Printf("What should the node be called on the stats page? (default = %s)\n", infos.socstats)
+		infos.socstats = w.readDefaultString(infos.socstats) + ":" + w.conf.ethstats
 	}
 	// If the node is a miner/signer, load up needed credentials
 	if !boot {
-		if w.conf.Genesis.Config.Ethash != nil {
+		if w.conf.Genesis.Config.Sochash != nil {
 			// Ethash based miners only need an etherbase to mine against
 			fmt.Println()
-			if infos.etherbase == "" {
+			if infos.socerbase == "" {
 				fmt.Printf("What address should the miner use?\n")
 				for {
 					if address := w.readAddress(); address != nil {
-						infos.etherbase = address.Hex()
+						infos.socerbase = address.Hex()
 						break
 					}
 				}
 			} else {
-				fmt.Printf("What address should the miner use? (default = %s)\n", infos.etherbase)
-				infos.etherbase = w.readDefaultAddress(common.HexToAddress(infos.etherbase)).Hex()
+				fmt.Printf("What address should the miner use? (default = %s)\n", infos.socerbase)
+				infos.socerbase = w.readDefaultAddress(common.HexToAddress(infos.socerbase)).Hex()
 			}
 		} else if w.conf.Genesis.Config.Clique != nil {
 			// If a previous signer was already set, offer to reuse it

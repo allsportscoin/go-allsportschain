@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/allsportschain/go-allsportschain/common"
-	"github.com/allsportschain/go-allsportschain/internal/ethapi"
+	"github.com/allsportschain/go-allsportschain/internal/socapi"
 	"github.com/allsportschain/go-allsportschain/log"
 	"github.com/allsportschain/go-allsportschain/signer/core"
 	"github.com/allsportschain/go-allsportschain/signer/rules/deps"
@@ -235,7 +235,7 @@ func (r *rulesetUI) OnSignerStartup(info core.StartupInfo) {
 	}
 }
 
-func (r *rulesetUI) OnApprovedTx(tx ethapi.SignTransactionResult) {
+func (r *rulesetUI) OnApprovedTx(tx socapi.SignTransactionResult) {
 	jsonTx, err := json.Marshal(tx)
 	if err != nil {
 		log.Warn("failed marshalling transaction", "tx", tx)

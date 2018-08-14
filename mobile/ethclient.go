@@ -22,17 +22,17 @@ import (
 	"math/big"
 
 	"github.com/allsportschain/go-allsportschain/core/types"
-	"github.com/allsportschain/go-allsportschain/ethclient"
+	"github.com/allsportschain/go-allsportschain/socclient"
 )
 
 // EthereumClient provides access to the Ethereum APIs.
 type EthereumClient struct {
-	client *ethclient.Client
+	client *socclient.Client
 }
 
 // NewEthereumClient connects a client to the given URL.
 func NewEthereumClient(rawurl string) (client *EthereumClient, _ error) {
-	rawClient, err := ethclient.Dial(rawurl)
+	rawClient, err := socclient.Dial(rawurl)
 	return &EthereumClient{rawClient}, err
 }
 

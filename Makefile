@@ -2,11 +2,11 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: geth android ios geth-cross swarm evm all test clean
-.PHONY: geth-linux geth-linux-386 geth-linux-amd64 geth-linux-mips64 geth-linux-mips64le
-.PHONY: geth-linux-arm geth-linux-arm-5 geth-linux-arm-6 geth-linux-arm-7 geth-linux-arm64
-.PHONY: geth-darwin geth-darwin-386 geth-darwin-amd64
-.PHONY: geth-windows geth-windows-386 geth-windows-amd64
+.PHONY: gsoc android ios geth-cross swarm evm all test clean
+.PHONY: gsoc -linux geth-linux-386 geth-linux-amd64 geth-linux-mips64 geth-linux-mips64le
+.PHONY: gsoc -linux-arm geth-linux-arm-5 geth-linux-arm-6 geth-linux-arm-7 geth-linux-arm64
+.PHONY: gsoc -darwin geth-darwin-386 geth-darwin-amd64
+.PHONY: gsoc -windows geth-windows-386 geth-windows-amd64
 
 GOBIN = $(shell pwd)/build/bin
 GO ?= latest
@@ -15,11 +15,6 @@ gsoc:
 	build/env.sh go run build/ci.go install ./cmd/gsoc
 	@echo "Done building."
 	@echo "Run \"$(GOBIN)/gsoc\" to launch gsoc."
-
-geth:
-	build/env.sh go run build/ci.go install ./cmd/geth
-	@echo "Done building."
-	@echo "Run \"$(GOBIN)/geth\" to launch geth."
 
 swarm:
 	build/env.sh go run build/ci.go install ./cmd/swarm
@@ -32,12 +27,12 @@ all:
 android:
 	build/env.sh go run build/ci.go aar --local
 	@echo "Done building."
-	@echo "Import \"$(GOBIN)/geth.aar\" to use the library."
+	@echo "Import \"$(GOBIN)/gsoc.aar\" to use the library."
 
 ios:
 	build/env.sh go run build/ci.go xcode --local
 	@echo "Done building."
-	@echo "Import \"$(GOBIN)/Geth.framework\" to use the library."
+	@echo "Import \"$(GOBIN)/Gsoc.framework\" to use the library."
 
 test: all
 	build/env.sh go run build/ci.go test

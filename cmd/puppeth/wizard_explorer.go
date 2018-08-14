@@ -35,7 +35,7 @@ func (w *wizard) deployExplorer() {
 		log.Error("No ethstats server configured")
 		return
 	}
-	if w.conf.Genesis.Config.Ethash == nil {
+	if w.conf.Genesis.Config.Sochash == nil {
 		log.Error("Only ethash network supported")
 		return
 	}

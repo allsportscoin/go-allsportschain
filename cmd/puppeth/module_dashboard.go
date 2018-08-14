@@ -176,11 +176,11 @@ var dashboardContent = `
 										<p>Initial processing required to synchronize is light, as it only verifies the validity of the headers; similarly required disk capacity is small, tallying around 500 bytes per header. Embedded machines with arbitrary storage, low power CPUs and 128MB+ RAM may work.</p>
 										<br/>
 										<p>To run an embedded node, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and start Geth with:
-											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
-											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=16 --ethash.cachesinmem=1 --syncmode=light{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
+											<pre>gsoc --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
+											<pre>gsoc --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=16 --sochash.cachesinmem=1 --syncmode=light{{if .Socstats}} --socstats='{{.Socstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
 										</p>
 										<br/>
-										<p>You can download Geth from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
+										<p>You can download Gsoc from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
 									</div>
 								</div>
 							</div>
@@ -618,8 +618,8 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 		"GethGenesis":      network + ".json",
 		"Bootnodes":        conf.bootnodes,
 		"BootnodesFlat":    strings.Join(conf.bootnodes, ","),
-		"Ethstats":         statsLogin,
-		"Ethash":           conf.Genesis.Config.Ethash != nil,
+		"Socstats":         statsLogin,
+		"Sochash":           conf.Genesis.Config.Sochash != nil,
 		"CppGenesis":       network + "-cpp.json",
 		"CppBootnodes":     strings.Join(bootCpp, " "),
 		"HarmonyGenesis":   network + "-harmony.json",
@@ -639,7 +639,7 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 	genesis, _ := conf.Genesis.MarshalJSON()
 	files[filepath.Join(workdir, network+".json")] = genesis
 
-	if conf.Genesis.Config.Ethash != nil {
+	if conf.Genesis.Config.Sochash != nil {
 		cppSpec, err := newCppEthereumGenesisSpec(network, conf.Genesis)
 		if err != nil {
 			return nil, err

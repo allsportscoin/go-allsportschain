@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/allsportschain/go-allsportschain/common"
-	"github.com/allsportschain/go-allsportschain/consensus/ethash"
+	"github.com/allsportschain/go-allsportschain/consensus/sochash"
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/eth"
 	"github.com/allsportschain/go-allsportschain/internal/jsre"
@@ -98,8 +98,8 @@ func newTester(t *testing.T, confOverride func(*eth.Config)) *tester {
 	ethConf := &eth.Config{
 		Genesis:   core.DeveloperGenesisBlock(15, common.Address{}),
 		Etherbase: common.HexToAddress(testAddress),
-		Ethash: ethash.Config{
-			PowMode: ethash.ModeTest,
+		Ethash: sochash.Config{
+			PowMode: sochash.ModeTest,
 		},
 	}
 	if confOverride != nil {

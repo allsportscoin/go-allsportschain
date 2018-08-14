@@ -40,7 +40,6 @@ import (
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/rpc"
-	"hash"
 )
 
 // This nil assignment ensures compile time that SimulatedBackend implements bind.ContractBackend.

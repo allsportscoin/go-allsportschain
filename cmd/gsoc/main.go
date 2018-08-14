@@ -33,7 +33,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/accounts/keystore"
 	"github.com/allsportschain/go-allsportschain/cmd/utils"
 	"github.com/allsportschain/go-allsportschain/console"
-	"github.com/allsportschain/go-allsportschain/eth"
+	"github.com/allsportschain/go-allsportschain/soc"
 	"github.com/allsportschain/go-allsportschain/socclient"
 	"github.com/allsportschain/go-allsportschain/internal/debug"
 	"github.com/allsportschain/go-allsportschain/log"
@@ -324,22 +324,22 @@ func startNode(ctx *cli.Context, stack *node.Node) {
 		if ctx.GlobalBool(utils.LightModeFlag.Name) || ctx.GlobalString(utils.SyncModeFlag.Name) == "light" {
 			utils.Fatalf("Light clients do not support mining")
 		}
-		var ethereum *eth.Ethereum
-		if err := stack.Service(&ethereum); err != nil {
-			utils.Fatalf("Ethereum service not running: %v", err)
+		var allsportschain *soc.Allsportschain
+		if err := stack.Service(&allsportschain); err != nil {
+			utils.Fatalf("Allsportschain service not running: %v", err)
 		}
 		// Use a reduced number of threads if requested
 		if threads := ctx.GlobalInt(utils.MinerThreadsFlag.Name); threads > 0 {
 			type threaded interface {
 				SetThreads(threads int)
 			}
-			if th, ok := ethereum.Engine().(threaded); ok {
+			if th, ok := allsportschain.Engine().(threaded); ok {
 				th.SetThreads(threads)
 			}
 		}
 		// Set the gas price to the limits from the CLI and start mining
-		ethereum.TxPool().SetGasPrice(utils.GlobalBig(ctx, utils.GasPriceFlag.Name))
-		if err := ethereum.StartMining(true); err != nil {
+		allsportschain.TxPool().SetGasPrice(utils.GlobalBig(ctx, utils.GasPriceFlag.Name))
+		if err := allsportschain.StartMining(true); err != nil {
 			utils.Fatalf("Failed to start mining: %v", err)
 		}
 	}

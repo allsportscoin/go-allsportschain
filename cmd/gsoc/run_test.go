@@ -34,7 +34,7 @@ func tmpdir(t *testing.T) string {
 	return dir
 }
 
-type testgeth struct {
+type testgsoc struct {
 	*cmdtest.TestCmd
 
 	// template variables for expect
@@ -63,8 +63,8 @@ func TestMain(m *testing.M) {
 
 // spawns geth with the given command line args. If the args don't set --datadir, the
 // child g gets a temporary data directory.
-func runGeth(t *testing.T, args ...string) *testgeth {
-	tt := &testgeth{}
+func runGsoc(t *testing.T, args ...string) *testgsoc {
+	tt := &testgsoc{}
 	tt.TestCmd = cmdtest.NewTestCmd(t, tt)
 	for i, arg := range args {
 		switch {
@@ -92,7 +92,7 @@ func runGeth(t *testing.T, args ...string) *testgeth {
 
 	// Boot "geth". This actually runs the test binary but the TestMain
 	// function will prevent any tests from running.
-	tt.Run("geth-test", args...)
+	tt.Run("gsoc-test", args...)
 
 	return tt
 }

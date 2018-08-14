@@ -17,7 +17,7 @@
 package miner
 
 import (
-	"bytes"
+	//"bytes"
 	"fmt"
 	"math/big"
 	"sync"
@@ -27,12 +27,12 @@ import (
 	mapset "github.com/deckarep/golang-set"
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/consensus"
-	"github.com/allsportschain/go-allsportschain/consensus/misc"
+	//"github.com/allsportschain/go-allsportschain/consensus/misc"
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/core/vm"
-	"github.com/allsportschain/go-allsportschain/ethdb"
+	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/event"
 	"github.com/allsportschain/go-allsportschain/log"
 	"github.com/allsportschain/go-allsportschain/params"
@@ -110,7 +110,7 @@ type worker struct {
 	eth     Backend
 	chain   *core.BlockChain
 	proc    core.Validator
-	chainDb ethdb.Database
+	chainDb socdb.Database
 
 	coinbase common.Address
 	extra    []byte

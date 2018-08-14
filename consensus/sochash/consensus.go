@@ -32,7 +32,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/params"
-	"hash"
+	//"hash"
 )
 
 // Ethash proof-of-work protocol constants.
@@ -66,7 +66,7 @@ func (sochash *Sochash) Author(header *types.Header) (common.Address, error) {
 }
 
 // VerifyHeader checks whether a header conforms to the consensus rules of the
-// stock Ethereum ethash engine.
+// stock Ethereum sochash engine.
 func (sochash *Sochash) VerifyHeader(chain consensus.ChainReader, header *types.Header, seal bool) error {
 	// If we're running a full engine faking, accept any input as valid
 	if sochash.config.PowMode == ModeFullFake {
@@ -167,7 +167,7 @@ func (sochash *Sochash) verifyHeaderWorker(chain consensus.ChainReader, headers 
 }
 
 // VerifyUncles verifies that the given block's uncles conform to the consensus
-// rules of the stock Ethereum ethash engine.
+// rules of the stock Ethereum sochash engine.
 func (sochash *Sochash) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
 	// If we're running a full engine faking, accept any input as valid
 	if sochash.config.PowMode == ModeFullFake {
@@ -219,7 +219,7 @@ func (sochash *Sochash) VerifyUncles(chain consensus.ChainReader, block *types.B
 }
 
 // verifyHeader checks whether a header conforms to the consensus rules of the
-// stock Ethereum ethash engine.
+// stock Ethereum sochash engine.
 // See YP section 4.3.4. "Block Header Validity"
 func (sochash *Sochash) verifyHeader(chain consensus.ChainReader, header, parent *types.Header, uncle bool, seal bool) error {
 	// Ensure that the header's extra-data section is of a reasonable size
@@ -502,7 +502,7 @@ func (sochash *Sochash) VerifySeal(chain consensus.ChainReader, header *types.He
 }
 
 // Prepare implements consensus.Engine, initializing the difficulty field of a
-// header to conform to the ethash protocol. The changes are done inline.
+// header to conform to the sochash protocol. The changes are done inline.
 func (sochash *Sochash) Prepare(chain consensus.ChainReader, header *types.Header) error {
 	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
 	if parent == nil {

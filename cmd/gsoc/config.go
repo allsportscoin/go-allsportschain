@@ -29,7 +29,7 @@ import (
 
 	"github.com/allsportschain/go-allsportschain/cmd/utils"
 	"github.com/allsportschain/go-allsportschain/dashboard"
-	"github.com/allsportschain/go-allsportschain/eth"
+	"github.com/allsportschain/go-allsportschain/soc"
 	"github.com/allsportschain/go-allsportschain/node"
 	"github.com/allsportschain/go-allsportschain/params"
 	whisper "github.com/allsportschain/go-allsportschain/whisper/whisperv6"
@@ -74,15 +74,15 @@ type ethstatsConfig struct {
 	URL string `toml:",omitempty"`
 }
 
-type gethConfig struct {
-	Eth       eth.Config
+type gsocConfig struct {
+	Soc       soc.Config
 	Shh       whisper.Config
 	Node      node.Config
 	Ethstats  ethstatsConfig
 	Dashboard dashboard.Config
 }
 
-func loadConfig(file string, cfg *gethConfig) error {
+func loadConfig(file string, cfg *gsocConfig) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return err
@@ -101,16 +101,16 @@ func defaultNodeConfig() node.Config {
 	cfg := node.DefaultConfig
 	cfg.Name = clientIdentifier
 	cfg.Version = params.VersionWithCommit(gitCommit)
-	cfg.HTTPModules = append(cfg.HTTPModules, "eth", "shh")
-	cfg.WSModules = append(cfg.WSModules, "eth", "shh")
-	cfg.IPCPath = "geth.ipc"
+	cfg.HTTPModules = append(cfg.HTTPModules, "soc", "shh")
+	cfg.WSModules = append(cfg.WSModules, "soc", "shh")
+	cfg.IPCPath = "gsoc.ipc"
 	return cfg
 }
 
-func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
+func makeConfigNode(ctx *cli.Context) (*node.Node, gsocConfig) {
 	// Load defaults.
-	cfg := gethConfig{
-		Eth:       eth.DefaultConfig,
+	cfg := gsocConfig{
+		Soc:       soc.DefaultConfig,
 		Shh:       whisper.DefaultConfig,
 		Node:      defaultNodeConfig(),
 		Dashboard: dashboard.DefaultConfig,
@@ -129,7 +129,7 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 	if err != nil {
 		utils.Fatalf("Failed to create the protocol stack: %v", err)
 	}
-	utils.SetEthConfig(ctx, stack, &cfg.Eth)
+	utils.SetEthConfig(ctx, stack, &cfg.Soc)
 	if ctx.GlobalIsSet(utils.EthStatsURLFlag.Name) {
 		cfg.Ethstats.URL = ctx.GlobalString(utils.EthStatsURLFlag.Name)
 	}
@@ -153,7 +153,7 @@ func enableWhisper(ctx *cli.Context) bool {
 func makeFullNode(ctx *cli.Context) *node.Node {
 	stack, cfg := makeConfigNode(ctx)
 
-	utils.RegisterEthService(stack, &cfg.Eth)
+	utils.RegisterEthService(stack, &cfg.Soc)
 
 	if ctx.GlobalBool(utils.DashboardEnabledFlag.Name) {
 		utils.RegisterDashboardService(stack, &cfg.Dashboard, gitCommit)
@@ -183,8 +183,8 @@ func dumpConfig(ctx *cli.Context) error {
 	_, cfg := makeConfigNode(ctx)
 	comment := ""
 
-	if cfg.Eth.Genesis != nil {
-		cfg.Eth.Genesis = nil
+	if cfg.Soc.Genesis != nil {
+		cfg.Soc.Genesis = nil
 		comment += "# Note: this config doesn't contain the genesis block.\n\n"
 	}
 
