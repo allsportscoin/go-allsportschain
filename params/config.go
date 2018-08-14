@@ -34,48 +34,31 @@ var (
 	MainnetChainConfig = &ChainConfig{
 		ChainID:             big.NewInt(1),
 		HomesteadBlock:      big.NewInt(1150000),
-		DAOForkBlock:        big.NewInt(1920000),
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(2463000),
-		EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:         big.NewInt(2675000),
-		EIP158Block:         big.NewInt(2675000),
-		ByzantiumBlock:      big.NewInt(4370000),
-		ConstantinopleBlock: nil,
-		Sochash:              new(SochashConfig),
+		Dpos:              new(DposConfig),
 	}
 
 	// TestnetChainConfig contains the chain parameters to run a node on the Ropsten test network.
 	TestnetChainConfig = &ChainConfig{
 		ChainID:             big.NewInt(3),
 		HomesteadBlock:      big.NewInt(0),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"),
-		EIP155Block:         big.NewInt(10),
-		EIP158Block:         big.NewInt(10),
-		ByzantiumBlock:      big.NewInt(1700000),
-		ConstantinopleBlock: nil,
-		Sochash:              new(SochashConfig),
+		Dpos:              new(DposConfig),
 	}
 
 	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
 	RinkebyChainConfig = &ChainConfig{
 		ChainID:             big.NewInt(4),
 		HomesteadBlock:      big.NewInt(1),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(2),
-		EIP150Hash:          common.HexToHash("0x9b095b36c15eaf13044373aef8ee0bd3a382a5abb92e402afa44b8249c3a90e9"),
-		EIP155Block:         big.NewInt(3),
-		EIP158Block:         big.NewInt(3),
-		ByzantiumBlock:      big.NewInt(1035301),
-		ConstantinopleBlock: nil,
 		Clique: &CliqueConfig{
 			Period: 15,
 			Epoch:  30000,
 		},
+	}
+
+	DposChainConfig = &ChainConfig{
+		ChainID:        big.NewInt(5),
+		HomesteadBlock: big.NewInt(0),
+
+		Dpos: &DposConfig{},
 	}
 
 	// AllEthashProtocolChanges contains every protocol change (EIPs) introduced
@@ -83,16 +66,16 @@ var (
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(SochashConfig), nil}
+	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, nil}
 
 	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the Clique consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}}
+	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), &CliqueConfig{Period: 0, Epoch: 30000},nil}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, new(SochashConfig), nil}
+	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
@@ -102,34 +85,14 @@ var (
 // that any network, identified by its genesis block, can have its own
 // set of configuration options.
 type ChainConfig struct {
-	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
-
-	HomesteadBlock *big.Int `json:"homesteadBlock,omitempty"` // Homestead switch block (nil = no fork, 0 = already homestead)
-
-	DAOForkBlock   *big.Int `json:"daoForkBlock,omitempty"`   // TheDAO hard-fork switch block (nil = no fork)
-	DAOForkSupport bool     `json:"daoForkSupport,omitempty"` // Whether the nodes supports or opposes the DAO hard-fork
-
-	// EIP150 implements the Gas price changes (https://github.com/ethereum/EIPs/issues/150)
-	EIP150Block *big.Int    `json:"eip150Block,omitempty"` // EIP150 HF block (nil = no fork)
-	EIP150Hash  common.Hash `json:"eip150Hash,omitempty"`  // EIP150 HF hash (needed for header only clients as only gas pricing changed)
-
-	EIP155Block *big.Int `json:"eip155Block,omitempty"` // EIP155 HF block
-	EIP158Block *big.Int `json:"eip158Block,omitempty"` // EIP158 HF block
-
-	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium switch block (nil = no fork, 0 = already on byzantium)
-	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
+	// chainId identifies the current chain and is used for replay protection
+	ChainID *big.Int `json:"chainId"`
+	// Homestead switch block (nil = no fork, 0 = already homestead)
+	HomesteadBlock *big.Int `json:"homesteadBlock,omitempty"`
 
 	// Various consensus engines
-	Sochash *SochashConfig `json:"sochash,omitempty"`
 	Clique *CliqueConfig `json:"clique,omitempty"`
-}
-
-// EthashConfig is the consensus engine configs for proof-of-work based sealing.
-type SochashConfig struct{}
-
-// String implements the stringer interface, returning the consensus engine details.
-func (c *SochashConfig) String() string {
-	return "sochash"
+	Dpos *DposConfig `json:"dpos,omitempty"`
 }
 
 // CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
@@ -143,59 +106,72 @@ func (c *CliqueConfig) String() string {
 	return "clique"
 }
 
+// DposConfig is the consensus engine configs for delegated proof-of-stake based sealing.
+type DposConfig struct {
+	Validators []common.Address `json:"validators"` // Genesis validator list
+}
+
+// String implements the stringer interface, returning the consensus engine details.
+func (d *DposConfig) String() string {
+	return "dpos"
+}
 // String implements the fmt.Stringer interface.
 func (c *ChainConfig) String() string {
 	var engine interface{}
 	switch {
-	case c.Sochash != nil:
-		engine = c.Sochash
+	case c.Dpos != nil:
+		engine = c.Dpos
 	case c.Clique != nil:
 		engine = c.Clique
+	case c.Dpos != nil:
+		engine = c.Dpos
+
 	default:
 		engine = "unknown"
 	}
 	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Engine: %v}",
 		c.ChainID,
 		c.HomesteadBlock,
-		c.DAOForkBlock,
-		c.DAOForkSupport,
-		c.EIP150Block,
-		c.EIP155Block,
-		c.EIP158Block,
-		c.ByzantiumBlock,
-		c.ConstantinopleBlock,
+
 		engine,
 	)
 }
 
+// new chain no that phase
 // IsHomestead returns whether num is either equal to the homestead block or greater.
 func (c *ChainConfig) IsHomestead(num *big.Int) bool {
-	return isForked(c.HomesteadBlock, num)
+	return false
+	//return isForked(c.HomesteadBlock, num)
 }
 
 // IsDAOFork returns whether num is either equal to the DAO fork block or greater.
 func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
-	return isForked(c.DAOForkBlock, num)
+	return false
+	//return isForked(c.DAOForkBlock, num)
 }
 
 // IsEIP150 returns whether num is either equal to the EIP150 fork block or greater.
 func (c *ChainConfig) IsEIP150(num *big.Int) bool {
-	return isForked(c.EIP150Block, num)
+	return false
+	//return isForked(c.EIP150Block, num)
 }
 
 // IsEIP155 returns whether num is either equal to the EIP155 fork block or greater.
 func (c *ChainConfig) IsEIP155(num *big.Int) bool {
-	return isForked(c.EIP155Block, num)
+	return false
+	//return isForked(c.EIP155Block, num)
 }
 
 // IsEIP158 returns whether num is either equal to the EIP158 fork block or greater.
 func (c *ChainConfig) IsEIP158(num *big.Int) bool {
-	return isForked(c.EIP158Block, num)
+	return false
+	//return isForked(c.EIP158Block, num)
 }
 
 // IsByzantium returns whether num is either equal to the Byzantium fork block or greater.
 func (c *ChainConfig) IsByzantium(num *big.Int) bool {
-	return isForked(c.ByzantiumBlock, num)
+	return false
+	//return isForked(c.ByzantiumBlock, num)
 }
 
 // IsConstantinople returns whether num is either equal to the Constantinople fork block or greater.
