@@ -50,11 +50,7 @@ type LesServer struct {
 	chtIndexer, bloomTrieIndexer *core.ChainIndexer
 }
 
-<<<<<<< HEAD
 func NewLesServer(soc *soc.Allsportschain, config *soc.Config) (*LesServer, error) {
-=======
-func NewLesServer(eth *soc.Ethereum, config *soc.Config) (*LesServer, error) {
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 	quitSync := make(chan struct{})
 	pm, err := NewProtocolManager(soc.BlockChain().Config(), false, ServerProtocolVersions, config.NetworkId, soc.EventMux(), soc.Engine(), newPeerSet(), soc.BlockChain(), soc.TxPool(), soc.ChainDb(), nil, nil, nil, quitSync, new(sync.WaitGroup))
 	if err != nil {

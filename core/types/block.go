@@ -164,7 +164,7 @@ type Block struct {
 	ReceivedAt   time.Time
 	ReceivedFrom interface{}
 
-	dposContext *DposContext
+	DposContext *DposContext
 }
 
 // DeprecatedTd is an old relic for extracting the TD of a block. It is in the
@@ -342,7 +342,8 @@ func (b *Block) HashNoNonce() common.Hash {
 	return b.header.HashNoNonce()
 }
 
-func (b *Block) DposCtx() *DposContext { return b.dposContext }
+func (b *Block) GetDposContext() *DposContext { return b.DposContext }
+
 
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.
@@ -378,7 +379,7 @@ func (b *Block) WithSeal(header *Header) *Block {
 		uncles:       b.uncles,
 
 		//dpos same as b
-		dposContext: b.dposContext,
+		DposContext: b.DposContext,
 	}
 }
 

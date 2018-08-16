@@ -116,6 +116,7 @@ func (self *Miner) Start(coinbase common.Address) {
 	log.Info("Starting mining operation")
 	self.worker.start()
 	self.worker.commitNewWork()
+
 }
 
 func (self *Miner) Stop() {
@@ -178,5 +179,5 @@ func (self *Miner) PendingBlock() *types.Block {
 
 func (self *Miner) SetSocerbase(addr common.Address) {
 	self.coinbase = addr
-	self.worker.setEtherbase(addr)
+	self.worker.setSocerbase(addr)
 }

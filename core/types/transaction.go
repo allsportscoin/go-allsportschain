@@ -31,19 +31,21 @@ import (
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go
 
-var (
-	ErrInvalidSig = errors.New("invalid transaction v, r, s values")
-)
-
 type TxType uint8
 
-const {
+const (
 	Normal TxType = iota
 	Candidate
 	UnCandidate
 	Delegate
 	UnDelegate
-}
+)
+
+var (
+	ErrInvalidSig     = errors.New("invalid transaction v, r, s values")
+	errNoSigner       = errors.New("missing signing methods")
+	ErrInvalidType    = errors.New("invalid transaction type")
+)
 
 type Transaction struct {
 	data txdata
@@ -59,7 +61,7 @@ type txdata struct {
 	GasLimit     uint64          `json:"gas"      gencodec:"required"`
 	Recipient    *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
 	Amount       *big.Int        `json:"value"    gencodec:"required"`
-	Type		 TxType          `json:"type"	  gencodec:"required"`
+	Type		 TxType          `json:"type"   gencodec:"required"`
 	Payload      []byte          `json:"input"    gencodec:"required"`
 
 	// Signature values
@@ -88,7 +90,7 @@ func NewTransaction(nonce uint64, to common.Address, amount *big.Int, txType TxT
 }
 
 func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
-	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, data)
+	return newTransaction(Normal, nonce, nil, amount, gasLimit, gasPrice, data)
 }
 
 func newTransaction(txType TxType, nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
@@ -184,7 +186,8 @@ func (tx *Transaction) Data() []byte       { return common.CopyBytes(tx.data.Pay
 func (tx *Transaction) Gas() uint64        { return tx.data.GasLimit }
 func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
 func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
-func (tx *Transaction) TxType() *big.Int   { return tx.data.Type }
+func (tx *Transaction) TxType() TxType     { return tx.data.Type }
+
 func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool   { return true }
 
@@ -411,8 +414,8 @@ func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *b
 		to:         to,
 		nonce:      nonce,
 		amount:     amount,
-		txType:     amount,
-		gasLimit:   txType,
+		txType:     txType,
+		gasLimit:   gasLimit,
 		gasPrice:   gasPrice,
 		data:       data,
 		checkNonce: checkNonce,

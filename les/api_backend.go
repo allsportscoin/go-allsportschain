@@ -173,11 +173,7 @@ func (b *LesApiBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
 }
 
 func (b *LesApiBackend) ChainDb() socdb.Database {
-<<<<<<< HEAD
 	return b.soc.chainDb
-=======
-	return b.eth.chainDb
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 }
 
 func (b *LesApiBackend) EventMux() *event.TypeMux {

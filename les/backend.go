@@ -46,11 +46,7 @@ import (
 	rpc "github.com/allsportschain/go-allsportschain/rpc"
 )
 
-<<<<<<< HEAD
 type LightAllsportschain struct {
-=======
-type LightEthereum struct {
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 	config *soc.Config
 
 	odr         *LesOdr
@@ -84,11 +80,7 @@ type LightEthereum struct {
 	wg sync.WaitGroup
 }
 
-<<<<<<< HEAD
 func New(ctx *node.ServiceContext, config *soc.Config) (*LightAllsportschain, error) {
-=======
-func New(ctx *node.ServiceContext, config *soc.Config) (*LightEthereum, error) {
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 	chainDb, err := soc.CreateDB(ctx, config, "lightchaindata")
 	if err != nil {
 		return nil, err

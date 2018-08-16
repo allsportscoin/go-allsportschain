@@ -214,19 +214,11 @@ var (
 	// Ethash settings
 	EthashCacheDirFlag = DirectoryFlag{
 		Name:  "sochash.cachedir",
-<<<<<<< HEAD
 		Usage: "Directory to store the sochash verification caches (default = inside the datadir)",
 	}
 	EthashCachesInMemoryFlag = cli.IntFlag{
 		Name:  "sochash.cachesinmem",
 		Usage: "Number of recent sochash caches to keep in memory (16MB each)",
-=======
-		Usage: "Directory to store the ethash verification caches (default = inside the datadir)",
-	}
-	EthashCachesInMemoryFlag = cli.IntFlag{
-		Name:  "sochash.cachesinmem",
-		Usage: "Number of recent ethash caches to keep in memory (16MB each)",
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 		Value: soc.DefaultConfig.Sochash.CachesInMem,
 	}
 	EthashCachesOnDiskFlag = cli.IntFlag{
@@ -245,13 +237,8 @@ var (
 		Value: soc.DefaultConfig.Sochash.DatasetsInMem,
 	}
 	EthashDatasetsOnDiskFlag = cli.IntFlag{
-<<<<<<< HEAD
 		Name:  "sochash.dagsondisk",
 		Usage: "Number of recent sochash mining DAGs to keep on disk (1+GB each)",
-=======
-		Name:  "ethash.dagsondisk",
-		Usage: "Number of recent ethash mining DAGs to keep on disk (1+GB each)",
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 		Value: soc.DefaultConfig.Sochash.DatasetsOnDisk,
 	}
 	// Transaction pool settings
@@ -1216,11 +1203,7 @@ func RegisterShhService(stack *node.Node, cfg *whisper.Config) {
 func RegisterEthStatsService(stack *node.Node, url string) {
 	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
 		// Retrieve both eth and les services
-<<<<<<< HEAD
 		var ethServ *soc.Allsportschain
-=======
-		var ethServ *soc.Ethereum
->>>>>>> ff648ad5d19d2e9983d4e0047e427ffaf1f8a505
 		ctx.Service(&ethServ)
 
 		var lesServ *les.LightAllsportschain

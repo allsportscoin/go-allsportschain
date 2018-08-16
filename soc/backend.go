@@ -29,7 +29,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/common/hexutil"
 	"github.com/allsportschain/go-allsportschain/consensus"
-	"github.com/allsportschain/go-allsportschain/consensus/clique"
+	"github.com/allsportschain/go-allsportschain/consensus/dpos"
 	"github.com/allsportschain/go-allsportschain/consensus/sochash"
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/core/bloombits"
@@ -211,8 +211,8 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (socdb.Data
 // CreateConsensusEngine creates the required type of consensus engine instance for an Allsportschain service
 func CreateConsensusEngine(ctx *node.ServiceContext, config *sochash.Config, chainConfig *params.ChainConfig, db socdb.Database) consensus.Engine {
 	// If proof-of-authority is requested, set it up
-	if chainConfig.Clique != nil {
-		return clique.New(chainConfig.Clique, db)
+	if chainConfig.Dpos != nil {
+		return dpos.New(chainConfig.Dpos, db)
 	}
 	// Otherwise assume proof-of-work
 	switch config.PowMode {
@@ -338,13 +338,13 @@ func (s *Allsportschain) StartMining(local bool) error {
 		log.Error("Cannot start mining without socerbase", "err", err)
 		return fmt.Errorf("socerbase missing: %v", err)
 	}
-	if clique, ok := s.engine.(*clique.Clique); ok {
+	if dpos, ok := s.engine.(*dpos.Dpos); ok {
 		wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
 		if wallet == nil || err != nil {
 			log.Error("Socerbase account unavailable locally", "err", err)
 			return fmt.Errorf("signer missing: %v", err)
 		}
-		clique.Authorize(eb, wallet.SignHash)
+		dpos.Authorize(eb, wallet.SignHash)
 	}
 	if local {
 		// If local (CPU) mining is started, we can disable the transaction rejection

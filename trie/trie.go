@@ -68,6 +68,7 @@ type Trie struct {
 	db           *Database
 	root         node
 	originalRoot common.Hash
+	//prefix       []byte
 
 	// Cache generation values.
 	// cachegen increases by one with each commit operation.
@@ -110,6 +111,16 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 	}
 	return trie, nil
 }
+
+
+//func NewTrieWithPrefix(root common.Hash, prefix []byte, db Database) (*Trie, error) {
+//	trie, err := New(root, db)
+//	if err != nil {
+//		return nil, err
+//	}
+//	trie.prefix = prefix
+//	return trie, nil
+//}
 
 // NodeIterator returns an iterator that returns nodes of the trie. Iteration starts at
 // the key after the given start key.
@@ -449,6 +460,10 @@ func (t *Trie) Hash() common.Hash {
 	hash, cached, _ := t.hashRoot(nil, nil)
 	t.root = cached
 	return common.BytesToHash(hash.(hashNode))
+}
+
+func (t *Trie) DbCommit(node common.Hash, report bool) (err error) {
+	return t.db.Commit(node, report)
 }
 
 // Commit writes all nodes to the trie's memory database, tracking the internal

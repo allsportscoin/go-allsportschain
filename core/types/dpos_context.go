@@ -7,9 +7,9 @@ import (
 
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/crypto/sha3"
-	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/rlp"
 	"github.com/allsportschain/go-allsportschain/trie"
+	"github.com/allsportschain/go-allsportschain/socdb"
 )
 
 type DposContext struct {
@@ -31,23 +31,33 @@ var (
 )
 
 func NewEpochTrie(root common.Hash, db socdb.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, epochPrefix, db)
+	//return trie.NewTrieWithPrefix(root, epochPrefix, db)
+	triedb := trie.NewDatabase(db)
+	return trie.New(root, triedb)
 }
 
 func NewDelegateTrie(root common.Hash, db socdb.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, delegatePrefix, db)
+	//return trie.NewTrieWithPrefix(root, delegatePrefix, db)
+	triedb := trie.NewDatabase(db)
+	return trie.New(root, triedb)
 }
 
 func NewVoteTrie(root common.Hash, db socdb.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, votePrefix, db)
+	//return trie.NewTrieWithPrefix(root, votePrefix, db)
+	triedb := trie.NewDatabase(db)
+	return trie.New(root, triedb)
 }
 
 func NewCandidateTrie(root common.Hash, db socdb.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, candidatePrefix, db)
+	//return trie.NewTrieWithPrefix(root, candidatePrefix, db)
+	triedb := trie.NewDatabase(db)
+	return trie.New(root, triedb)
 }
 
 func NewMintCntTrie(root common.Hash, db socdb.Database) (*trie.Trie, error) {
-	return trie.NewTrieWithPrefix(root, mintCntPrefix, db)
+	//return trie.NewTrieWithPrefix(root, mintCntPrefix, db)
+	triedb := trie.NewDatabase(db)
+	return trie.New(root, triedb)
 }
 
 func NewDposContext(db socdb.Database) (*DposContext, error) {
@@ -209,7 +219,7 @@ func (d *DposContext) KickoutCandidate(candidateAddr common.Address) error {
 			return err
 		}
 	}
-	iter := trie.NewIterator(d.delegateTrie.PrefixIterator(candidate))
+	iter := trie.NewIterator(d.delegateTrie.NodeIterator(candidate))
 	for iter.Next() {
 		delegator := iter.Value
 		key := append(candidate, delegator...)
@@ -296,27 +306,38 @@ func (d *DposContext) UnDelegate(delegatorAddr, candidateAddr common.Address) er
 	return d.voteTrie.TryDelete(delegator)
 }
 
-func (d *DposContext) CommitTo(dbw trie.DatabaseWriter) (*DposContextProto, error) {
-	epochRoot, err := d.epochTrie.CommitTo(dbw)
+func (d *DposContext) CommitTo() (*DposContextProto, error) {
+//func (d *DposContext) CommitTo(dbw trie.DatabaseWriter) (*DposContextProto, error) {
+	//epochRoot, err := d.epochTrie.CommitTo(dbw)
+	epochRoot, err := d.epochTrie.Commit(nil)
 	if err != nil {
 		return nil, err
 	}
-	delegateRoot, err := d.delegateTrie.CommitTo(dbw)
+	d.epochTrie.DbCommit(epochRoot, true)
+	//delegateRoot, err := d.delegateTrie.CommitTo(dbw)
+	delegateRoot, err := d.delegateTrie.Commit(nil)
 	if err != nil {
 		return nil, err
 	}
-	voteRoot, err := d.voteTrie.CommitTo(dbw)
+	d.delegateTrie.DbCommit(delegateRoot, true)
+	//voteRoot, err := d.voteTrie.CommitTo(dbw)
+	voteRoot, err := d.voteTrie.Commit(nil)
 	if err != nil {
 		return nil, err
 	}
-	candidateRoot, err := d.candidateTrie.CommitTo(dbw)
+	d.voteTrie.DbCommit(voteRoot, true)
+	//candidateRoot, err := d.candidateTrie.CommitTo(dbw)
+	candidateRoot, err := d.candidateTrie.Commit(nil)
 	if err != nil {
 		return nil, err
 	}
-	mintCntRoot, err := d.mintCntTrie.CommitTo(dbw)
+	d.candidateTrie.DbCommit(candidateRoot, true)
+	//mintCntRoot, err := d.mintCntTrie.CommitTo(dbw)
+	mintCntRoot, err := d.mintCntTrie.Commit(nil)
 	if err != nil {
 		return nil, err
 	}
+	d.mintCntTrie.DbCommit(mintCntRoot, true)
 	return &DposContextProto{
 		EpochHash:     epochRoot,
 		DelegateHash:  delegateRoot,
