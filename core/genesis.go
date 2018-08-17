@@ -234,6 +234,10 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 		}
 	}
 	root := statedb.IntermediateRoot(false)
+
+	// add dposcontext
+	dposContext := initGenesisDposContext(g, db)
+	dposContextProto := dposContext.ToProto()
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
 		Nonce:      types.EncodeNonce(g.Nonce),
@@ -245,6 +249,7 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 		Difficulty: g.Difficulty,
 		MixDigest:  g.Mixhash,
 		Coinbase:   g.Coinbase,
+		DposContext: dposContextProto,
 		Root:       root,
 	}
 	if g.GasLimit == 0 {
@@ -256,6 +261,9 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true)
 
+	block := types.NewBlock(head, nil, nil, nil)
+	block.DposContext = dposContext
+
 	return types.NewBlock(head, nil, nil, nil)
 }
 
@@ -263,6 +271,11 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 // The block is committed as the canonical head block.
 func (g *Genesis) Commit(db socdb.Database) (*types.Block, error) {
 	block := g.ToBlock(db)
+	// add dposcontext
+	if _, err := block.DposContext.CommitTo(); err != nil {
+		return nil, err
+	}
+
 	if block.Number().Sign() != 0 {
 		return nil, fmt.Errorf("can't commit genesis block with number > 0")
 	}
@@ -370,4 +383,19 @@ func decodePrealloc(data string) GenesisAlloc {
 		ga[common.BigToAddress(account.Addr)] = GenesisAccount{Balance: account.Balance}
 	}
 	return ga
+}
+
+func initGenesisDposContext(g *Genesis, db ethdb.Database) *types.DposContext {
+	dc, err := types.NewDposContextFromProto(db, &types.DposContextProto{})
+	if err != nil {
+		return nil
+	}
+	if g.Config != nil && g.Config.Dpos != nil && g.Config.Dpos.Validators != nil {
+		dc.SetValidators(g.Config.Dpos.Validators)
+		for _, validator := range g.Config.Dpos.Validators {
+			dc.DelegateTrie().TryUpdate(append(validator.Bytes(), validator.Bytes()...), validator.Bytes())
+			dc.CandidateTrie().TryUpdate(validator.Bytes(), validator.Bytes())
+		}
+	}
+	return dc
 }

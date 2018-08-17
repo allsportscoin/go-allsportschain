@@ -30,6 +30,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/common/mclock"
 	"github.com/allsportschain/go-allsportschain/consensus"
+	"github.com/allsportschain/go-allsportschain/consensus/dpos"
 	"github.com/allsportschain/go-allsportschain/core/rawdb"
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/types"
@@ -42,6 +43,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/rlp"
 	"github.com/allsportschain/go-allsportschain/trie"
+	"github.com/allsportschain/go-allsportschain/consensus/dpos"
 	"github.com/hashicorp/golang-lru"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
@@ -1155,7 +1157,41 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 			bc.reportBlock(block, receipts, err)
 			return i, events, coalescedLogs, err
 		}
+
+		// Validate the dpos state using the default validator
+		err = bc.Validator().ValidateDposState(block)
+		if err != nil {
+			bc.reportBlock(block, receipts, err)
+			return i, events, coalescedLogs, err
+		}
+		// Validate validator
+		engine, isDpos := bc.engine.(*dpos.Dpos)
+		if isDpos {
+			err = engine.VerifySeal(bc, block.Header())
+			if err != nil {
+				bc.reportBlock(block, receipts, err)
+				return i, events, coalescedLogs, err
+			}
+		}
+
 		proctime := time.Since(bstart)
+
+		// Validate the dpos state using the default validator
+		err = bc.Validator().ValidateDposState(block)
+		if err != nil {
+			bc.reportBlock(block, receipts, err)
+			return i, events, coalescedLogs, err
+		}
+
+		// Validate validator
+		dposEngine, isDpos := bc.engine.(*dpos.Dpos)
+		if isDpos {
+			err = dposEngine.VerifySeal(bc, block.Header())
+			if err != nil {
+				bc.reportBlock(block, receipts, err)
+				return i, events, coalescedLogs, err
+			}
+		}
 
 		// Write the block to the chain and get the status.
 		status, err := bc.WriteBlockWithState(block, receipts, state)

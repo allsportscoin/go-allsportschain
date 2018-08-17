@@ -134,7 +134,7 @@ type worker struct {
 	mining int32
 	atWork int32
 
-	quitCh  chan struct{}
+	//quitCh  chan struct{}
 	stopper chan struct{}
 }
 
@@ -156,7 +156,7 @@ func newWorker(config *params.ChainConfig, engine consensus.Engine, coinbase com
 		agents:         make(map[Agent]struct{}),
 		unconfirmed:    newUnconfirmedBlocks(eth.BlockChain(), miningLogAtDepth),
 
-		quitCh:         make(chan struct{}, 1),
+		//quitCh:         make(chan struct{}, 1),
 		stopper:        make(chan struct{}, 1),
 	}
 	// Subscribe NewTxsEvent for tx pool
@@ -250,8 +250,8 @@ func (self *worker) mintLoop() {
 			self.mintBlock(now.Unix())
 		case <-self.stopper:
 			//to stop agent.mine
-			close(self.quitCh)
-			self.quitCh = make(chan struct{}, 1)
+			//close(self.quitCh)
+			//self.quitCh = make(chan struct{}, 1)
 			self.stopper = make(chan struct{}, 1)
 			return
 		}
@@ -318,9 +318,9 @@ func (self *worker) update() {
 		select {
 		// Handle ChainHeadEvent
 		case <-self.chainHeadCh:
-			close(self.quitCh)
-			self.quitCh = make(chan struct{}, 1)
-			//self.commitNewWork()
+			//close(self.quitCh)
+			//self.quitCh = make(chan struct{}, 1)
+			self.commitNewWork()
 
 		// Handle ChainSideEvent
 		case ev := <-self.chainSideCh:
@@ -450,7 +450,7 @@ func (self *worker) makeCurrent(parent *types.Block, header *types.Header) error
 	return nil
 }
 
-func (self *worker) commitNewWork() (*Work, error) {
+func (self *worker) commitNewWork() {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	self.uncleMu.Lock()
@@ -477,7 +477,6 @@ func (self *worker) commitNewWork() (*Work, error) {
 		ParentHash: parent.Hash(),
 		Number:     num.Add(num, common.Big1),
 		GasLimit:   core.CalcGasLimit(parent),
-		GasUsed:    uint64(0),
 		Extra:      self.extra,
 		Time:       big.NewInt(tstamp),
 	}
@@ -486,20 +485,37 @@ func (self *worker) commitNewWork() (*Work, error) {
 		header.Coinbase = self.coinbase
 	}
 	if err := self.engine.Prepare(self.chain, header); err != nil {
-		return nil, fmt.Errorf("got error when preparing header, err: %s", err)
+		log.Error("Failed to prepare header for mining", "err", err)
+		return
 	}
-
+	// If we are care about TheDAO hard-fork check whether to override the extra-data or not
+	//if daoBlock := self.config.DAOForkBlock; daoBlock != nil {
+	//	// Check whether the block is among the fork extra-override range
+	//	limit := new(big.Int).Add(daoBlock, params.DAOForkExtraRange)
+	//	if header.Number.Cmp(daoBlock) >= 0 && header.Number.Cmp(limit) < 0 {
+	//		// Depending whether we support or oppose the fork, override differently
+	//		if self.config.DAOForkSupport {
+	//			header.Extra = common.CopyBytes(params.DAOForkBlockExtra)
+	//		} else if bytes.Equal(header.Extra, params.DAOForkBlockExtra) {
+	//			header.Extra = []byte{} // If miner opposes, don't let it use the reserved extra-data
+	//		}
+	//	}
+	//}
 	// Could potentially happen if starting to mine in an odd state.
 	err := self.makeCurrent(parent, header)
 	if err != nil {
-		return nil, fmt.Errorf("got error when create mining context, err: %s", err)
+		log.Error("Failed to create mining context", "err", err)
+		return
 	}
 	// Create the current work task and check any fork transitions needed
 	work := self.current
-
+	//if self.config.DAOForkSupport && self.config.DAOForkBlock != nil && self.config.DAOForkBlock.Cmp(header.Number) == 0 {
+	//	misc.ApplyDAOHardFork(work.state)
+	//}
 	pending, err := self.eth.TxPool().Pending()
 	if err != nil {
-		return nil, fmt.Errorf("got error when fetch pending transactions, err: %s", err)
+		log.Error("Failed to fetch pending transactions", "err", err)
+		return
 	}
 	txs := types.NewTransactionsByPriceAndNonce(self.current.signer, pending)
 	work.commitTransactions(self.mux, txs, self.chain, self.coinbase)
@@ -528,11 +544,11 @@ func (self *worker) commitNewWork() (*Work, error) {
 	}
 	// Create the new block to seal with the consensus engine
 	if work.Block, err = self.engine.Finalize(self.chain, header, work.state, work.txs, uncles, work.receipts, work.dposContext); err != nil {
-		return nil, fmt.Errorf("got error when finalize block for sealing, err: %s", err)
+		log.Error("Failed to finalize block for sealing", "err", err)
+		return
 	}
 	work.Block.DposContext = work.dposContext
-
-	// update the count for the miner of new block
+	
 	// We only care about logging if we're actually mining.
 	if atomic.LoadInt32(&self.mining) == 1 {
 		log.Info("Commit new mining work", "number", work.Block.Number(), "txs", work.tcount, "uncles", len(uncles), "elapsed", common.PrettyDuration(time.Since(tstart)))
@@ -540,8 +556,6 @@ func (self *worker) commitNewWork() (*Work, error) {
 	}
 	self.push(work)
 	self.updateSnapshot()
-
-	return work, nil
 }
 
 func (self *worker) commitUncle(work *Work, uncle *types.Header) error {

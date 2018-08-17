@@ -342,8 +342,7 @@ func (b *Block) HashNoNonce() common.Hash {
 	return b.header.HashNoNonce()
 }
 
-func (b *Block) GetDposContext() *DposContext { return b.DposContext }
-
+func (b *Block) DposCtx() *DposContext { return b.DposContext }
 
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.

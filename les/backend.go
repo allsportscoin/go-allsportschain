@@ -26,6 +26,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/common/hexutil"
 	"github.com/allsportschain/go-allsportschain/consensus"
+	"github.com/allsportschain/go-allsportschain/consensus/dpos"
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/core/bloombits"
 	"github.com/allsportschain/go-allsportschain/core/rawdb"
@@ -102,7 +103,7 @@ func New(ctx *node.ServiceContext, config *soc.Config) (*LightAllsportschain, er
 		peers:            peers,
 		reqDist:          newRequestDistributor(peers, quitSync),
 		accountManager:   ctx.AccountManager,
-		engine:           soc.CreateConsensusEngine(ctx, &config.Sochash, chainConfig, chainDb),
+		engine:           dpos.New(chainConfig.Dpos, chainDb),
 		shutdownChan:     make(chan bool),
 		networkId:        config.NetworkId,
 		bloomRequests:    make(chan chan *bloombits.Retrieval),

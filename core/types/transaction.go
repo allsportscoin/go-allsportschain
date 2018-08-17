@@ -124,6 +124,22 @@ func (tx *Transaction) ChainId() *big.Int {
 	return deriveChainId(tx.data.V)
 }
 
+// Valid the transaction when the type isn't the binary
+func (tx *Transaction) Validate() error {
+	if tx.Type() != Normal {
+		if tx.Value().Uint64() != 0 {
+			return errors.New("transaction value should be 0")
+		}
+		if tx.To() == nil && (tx.Type() == Delegate || tx.Type() == UnDelegate) {
+			return errors.New("receipient was required")
+		}
+		if tx.Data() != nil {
+			return errors.New("payload should be empty")
+		}
+	}
+	return nil
+}
+
 // Protected returns whether the transaction is protected from replay protection.
 func (tx *Transaction) Protected() bool {
 	return isProtectedV(tx.data.V)
@@ -186,7 +202,7 @@ func (tx *Transaction) Data() []byte       { return common.CopyBytes(tx.data.Pay
 func (tx *Transaction) Gas() uint64        { return tx.data.GasLimit }
 func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.data.Price) }
 func (tx *Transaction) Value() *big.Int    { return new(big.Int).Set(tx.data.Amount) }
-func (tx *Transaction) TxType() TxType     { return tx.data.Type }
+func (tx *Transaction) Type() TxType       { return tx.data.Type }
 
 func (tx *Transaction) Nonce() uint64      { return tx.data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool   { return true }
@@ -408,13 +424,12 @@ type Message struct {
 	checkNonce bool
 }
 
-func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, txType TxType, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
+func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte, checkNonce bool) Message {
 	return Message{
 		from:       from,
 		to:         to,
 		nonce:      nonce,
 		amount:     amount,
-		txType:     txType,
 		gasLimit:   gasLimit,
 		gasPrice:   gasPrice,
 		data:       data,

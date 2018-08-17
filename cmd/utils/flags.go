@@ -35,7 +35,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common/fdlimit"
 	"github.com/allsportschain/go-allsportschain/consensus"
 	"github.com/allsportschain/go-allsportschain/consensus/clique"
-	"github.com/allsportschain/go-allsportschain/consensus/sochash"
+	"github.com/allsportschain/go-allsportschain/consensus/dpos"
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/vm"
@@ -1285,17 +1285,7 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 	if config.Clique != nil {
 		engine = clique.New(config.Clique, chainDb)
 	} else {
-		engine = sochash.NewFaker()
-		if !ctx.GlobalBool(FakePoWFlag.Name) {
-			engine = sochash.New(sochash.Config{
-				CacheDir:       stack.ResolvePath(soc.DefaultConfig.Sochash.CacheDir),
-				CachesInMem:    soc.DefaultConfig.Sochash.CachesInMem,
-				CachesOnDisk:   soc.DefaultConfig.Sochash.CachesOnDisk,
-				DatasetDir:     stack.ResolvePath(soc.DefaultConfig.Sochash.DatasetDir),
-				DatasetsInMem:  soc.DefaultConfig.Sochash.DatasetsInMem,
-				DatasetsOnDisk: soc.DefaultConfig.Sochash.DatasetsOnDisk,
-			})
-		}
+		engine = dpos.New(config.Dpos, chainDb)
 	}
 	if gcmode := ctx.GlobalString(GCModeFlag.Name); gcmode != "full" && gcmode != "archive" {
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
