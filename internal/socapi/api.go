@@ -869,6 +869,7 @@ type RPCTransaction struct {
 	To               *common.Address `json:"to"`
 	TransactionIndex hexutil.Uint    `json:"transactionIndex"`
 	Value            *hexutil.Big    `json:"value"`
+	Type             types.TxType    `json:"type"`
 	V                *hexutil.Big    `json:"v"`
 	R                *hexutil.Big    `json:"r"`
 	S                *hexutil.Big    `json:"s"`
@@ -893,6 +894,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		Nonce:    hexutil.Uint64(tx.Nonce()),
 		To:       tx.To(),
 		Value:    (*hexutil.Big)(tx.Value()),
+		Type:	  tx.Type(),
 		V:        (*hexutil.Big)(v),
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
@@ -1067,6 +1069,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"transactionIndex":  hexutil.Uint64(index),
 		"from":              from,
 		"to":                tx.To(),
+		"type":				tx.Type(),
 		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
 		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
 		"contractAddress":   nil,
@@ -1119,7 +1122,8 @@ type SendTxArgs struct {
 	// newer name and should be preferred by clients.
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input"`
-	Type     types.TxType    `json:"type"`
+	//Type     types.TxType    `json:"type"`
+	Type  *hexutil.Uint `json:type`
 }
 
 // setDefaults is a helper function that fills in default values for unspecified tx fields.
@@ -1128,6 +1132,11 @@ func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
 		args.Gas = new(hexutil.Uint64)
 		*(*uint64)(args.Gas) = 90000
 	}
+
+	if args.Type == nil {
+		args.Type = new(hexutil.Uint)
+	}
+
 	if args.GasPrice == nil {
 		price, err := b.SuggestPrice(ctx)
 		if err != nil {
@@ -1138,6 +1147,7 @@ func (args *SendTxArgs) setDefaults(ctx context.Context, b Backend) error {
 	if args.Value == nil {
 		args.Value = new(hexutil.Big)
 	}
+
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.From)
 		if err != nil {
@@ -1170,10 +1180,12 @@ func (args *SendTxArgs) toTransaction() *types.Transaction {
 	} else if args.Input != nil {
 		input = *args.Input
 	}
-	if args.To == nil && args.Type == types.Normal {
+
+	txType := types.TxType(*args.Type)
+	if args.To == nil && txType == types.Normal {
 		return types.NewContractCreation(uint64(*args.Nonce), (*big.Int)(args.Value), uint64(*args.Gas), (*big.Int)(args.GasPrice), input)
 	}
-	return types.NewTransaction(uint64(*args.Nonce), *args.To, (*big.Int)(args.Value), args.Type, uint64(*args.Gas), (*big.Int)(args.GasPrice), input)
+	return types.NewTransaction(uint64(*args.Nonce), *args.To, (*big.Int)(args.Value), txType, uint64(*args.Gas), (*big.Int)(args.GasPrice), input)
 }
 
 // submitTransaction is a helper function that submits tx to txPool and logs a message.
@@ -1204,6 +1216,7 @@ func submitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // transaction pool.
 func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args SendTxArgs) (common.Hash, error) {
 
+	log.Info(fmt.Sprintf("get args %v", args))
 	// Look up the wallet containing the requested signer
 	account := accounts.Account{Address: args.From}
 
@@ -1241,9 +1254,11 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Sen
 // The sender is responsible for signing the transaction and using the correct nonce.
 func (s *PublicTransactionPoolAPI) SendRawTransaction(ctx context.Context, encodedTx hexutil.Bytes) (common.Hash, error) {
 	tx := new(types.Transaction)
+	log.Info(fmt.Sprint("send raw transaction before decode: %v \n", encodedTx))
 	if err := rlp.DecodeBytes(encodedTx, tx); err != nil {
 		return common.Hash{}, err
 	}
+	log.Info(fmt.Sprint("send raw transaction: %v \n", tx))
 	return submitTransaction(ctx, s.b, tx)
 }
 
