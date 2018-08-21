@@ -398,7 +398,7 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 		if r.isPubSub && strings.HasSuffix(r.method, unsubscribeMethodSuffix) {
 			requests[i] = &serverRequest{id: r.id, isUnsubscribe: true}
 			argTypes := []reflect.Type{reflect.TypeOf("")} // expect subscription id as first arg
-			log.Info(fmt.Sprintf("ltf_readRequest before parser method %v %v %v",svc.name, r.params, argTypes))
+			log.Info(fmt.Sprintf("log_readRequest before parser method %v %v %v",svc.name, r.params, argTypes))
 			if args, err := codec.ParseRequestArguments(argTypes, r.params); err == nil {
 				requests[i].args = args
 			} else {
@@ -411,11 +411,11 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 			requests[i] = &serverRequest{id: r.id, err: &methodNotFoundError{r.service, r.method}}
 			continue
 		}
-		log.Info(fmt.Sprintf("ltf_readRequest lookup RPC all method %v",svc.callbacks))
+		log.Info(fmt.Sprintf("log_readRequest lookup RPC all method %v",svc.callbacks))
 		if r.isPubSub { // eth_subscribe, r.method contains the subscription method name
 			if callb, ok := svc.subscriptions[r.method]; ok {
 				requests[i] = &serverRequest{id: r.id, svcname: svc.name, callb: callb}
-				log.Info(fmt.Sprintf("ltf_readRequest lookup RPC method %v %v",svc.name, callb))
+				log.Info(fmt.Sprintf("log_readRequest lookup RPC method %v %v",svc.name, callb))
 				if r.params != nil && len(callb.argTypes) > 0 {
 					argTypes := []reflect.Type{reflect.TypeOf("")}
 					argTypes = append(argTypes, callb.argTypes...)
@@ -426,7 +426,7 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 					}
 				}
 			} else {
-				log.Info(fmt.Sprintf("ltf_readRequest lookup RPC method not sub %v %v",r.service, r.method))
+				log.Info(fmt.Sprintf("log_readRequest lookup RPC method not sub %v %v",r.service, r.method))
 				requests[i] = &serverRequest{id: r.id, err: &methodNotFoundError{r.service, r.method}}
 			}
 			continue
@@ -435,7 +435,7 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 		if callb, ok := svc.callbacks[r.method]; ok { // lookup RPC method
 			requests[i] = &serverRequest{id: r.id, svcname: svc.name, callb: callb}
 			if r.params != nil && len(callb.argTypes) > 0 {
-				log.Info(fmt.Sprintf("ltf_readRequest  ParseRequestArguments not sub %v %v",callb.argTypes, r.params))
+				log.Info(fmt.Sprintf("log_readRequest  ParseRequestArguments not sub %v %v",callb.argTypes, r.params))
 				if args, err := codec.ParseRequestArguments(callb.argTypes, r.params); err == nil {
 					requests[i].args = args
 				} else {
@@ -443,7 +443,7 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 				}
 
 			}
-			log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments  %v %v",requests[i].args, requests[i].err))
+			log.Info(fmt.Sprintf("log_readRequest  after ParseRequestArguments  %v %v",requests[i].args, requests[i].err))
 
 			continue
 		}

@@ -450,7 +450,7 @@ func (c *Client) Subscribe(ctx context.Context, namespace string, channel interf
 
 func (c *Client) newMessage(method string, paramsIn ...interface{}) (*jsonrpcMessage, error) {
 
-	log.Info(fmt.Sprintf("ltf_methods RegisterName name = %v",paramsIn))
+	log.Info(fmt.Sprintf("methods RegisterName name = %v",paramsIn))
 	params, err := json.Marshal(paramsIn)
 	if err != nil {
 		return nil, err
