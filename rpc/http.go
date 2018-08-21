@@ -30,8 +30,8 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 	"github.com/rs/cors"
+	"github.com/allsportschain/go-allsportschain/log"
 )
 
 const (
@@ -130,6 +130,8 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*jsonr
 
 func (hc *httpConn) doRequest(ctx context.Context, msg interface{}) (io.ReadCloser, error) {
 	body, err := json.Marshal(msg)
+	log.Info(fmt.Sprintf("after new message in doRequest %v \n", body))
+
 	if err != nil {
 		return nil, err
 	}

@@ -423,6 +423,9 @@ func (self *worker) makeCurrent(parent *types.Block, header *types.Header) error
 		return err
 	}
 	dposContext, err := types.NewDposContextFromProto(self.chainDb, parent.Header().DposContext)
+	if err != nil {
+		return err
+	}
 	work := &Work{
 		config:      self.config,
 		signer:      types.NewEIP155Signer(self.config.ChainID),

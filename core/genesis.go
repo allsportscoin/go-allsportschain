@@ -264,7 +264,7 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 	block := types.NewBlock(head, nil, nil, nil)
 	block.DposContext = dposContext
 
-	return types.NewBlock(head, nil, nil, nil)
+	return block
 }
 
 // Commit writes the block and state of a genesis specification to the database.
@@ -279,6 +279,7 @@ func (g *Genesis) Commit(db socdb.Database) (*types.Block, error) {
 	if block.Number().Sign() != 0 {
 		return nil, fmt.Errorf("can't commit genesis block with number > 0")
 	}
+
 	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), g.Difficulty)
 	rawdb.WriteBlock(db, block)
 	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil)
@@ -385,7 +386,7 @@ func decodePrealloc(data string) GenesisAlloc {
 	return ga
 }
 
-func initGenesisDposContext(g *Genesis, db ethdb.Database) *types.DposContext {
+func initGenesisDposContext(g *Genesis, db socdb.Database) *types.DposContext {
 	dc, err := types.NewDposContextFromProto(db, &types.DposContextProto{})
 	if err != nil {
 		return nil

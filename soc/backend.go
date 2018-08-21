@@ -86,6 +86,7 @@ type Allsportschain struct {
 
 	miner     *miner.Miner
 	gasPrice  *big.Int
+	validator common.Address
 	socerbase common.Address
 
 	networkID     uint64
@@ -332,7 +333,35 @@ func (s *Allsportschain) SetSocerbase(socerbase common.Address) {
 	s.miner.SetSocerbase(socerbase)
 }
 
+func (s *Allsportschain) Validator() (validator common.Address, err error) {
+	s.lock.RLock()
+	validator = s.validator
+	s.lock.RUnlock()
+
+	if validator != (common.Address{}) {
+		return validator, nil
+	}
+	if wallets := s.AccountManager().Wallets(); len(wallets) > 0 {
+		if accounts := wallets[0].Accounts(); len(accounts) > 0 {
+			return accounts[0].Address, nil
+		}
+	}
+	return common.Address{}, fmt.Errorf("validator address must be explicitly specified")
+}
+
+// set in js console via admin interface or wrapper from cli flags
+func (s *Allsportschain) SetValidator(validator common.Address) {
+	s.lock.Lock()
+	s.validator = validator
+	s.lock.Unlock()
+}
+
 func (s *Allsportschain) StartMining(local bool) error {
+	validator, err := s.Validator()
+	if err != nil {
+		log.Error("Cannot start mining without validator", "err", err)
+		return fmt.Errorf("validator missing: %v", err)
+	}
 	eb, err := s.Socerbase()
 	if err != nil {
 		log.Error("Cannot start mining without socerbase", "err", err)
@@ -344,7 +373,7 @@ func (s *Allsportschain) StartMining(local bool) error {
 			log.Error("Socerbase account unavailable locally", "err", err)
 			return fmt.Errorf("signer missing: %v", err)
 		}
-		dpos.Authorize(eb, wallet.SignHash)
+		dpos.Authorize(validator, wallet.SignHash)
 	}
 	if local {
 		// If local (CPU) mining is started, we can disable the transaction rejection

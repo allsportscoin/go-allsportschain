@@ -191,6 +191,12 @@ func (api *PrivateMinerAPI) SetGasPrice(gasPrice hexutil.Big) bool {
 	return true
 }
 
+// SetValidator sets the validator of the miner
+func (api *PrivateMinerAPI) SetValidator(validator common.Address) bool {
+	api.e.SetValidator(validator)
+	return true
+}
+
 // SetSocerbase sets the etherbase of the miner
 func (api *PrivateMinerAPI) SetSocerbase(etherbase common.Address) bool {
 	api.e.SetSocerbase(etherbase)

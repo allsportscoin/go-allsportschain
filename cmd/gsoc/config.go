@@ -129,7 +129,7 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gsocConfig) {
 	if err != nil {
 		utils.Fatalf("Failed to create the protocol stack: %v", err)
 	}
-	utils.SetEthConfig(ctx, stack, &cfg.Soc)
+	utils.SetSocConfig(ctx, stack, &cfg.Soc)
 	if ctx.GlobalIsSet(utils.EthStatsURLFlag.Name) {
 		cfg.Ethstats.URL = ctx.GlobalString(utils.EthStatsURLFlag.Name)
 	}

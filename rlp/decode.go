@@ -26,6 +26,7 @@ import (
 	"math/big"
 	"reflect"
 	"strings"
+	"github.com/allsportschain/go-allsportschain/log"
 )
 
 var (
@@ -398,6 +399,7 @@ func decodeByteArray(s *Stream, val reflect.Value) error {
 		return err
 	}
 	vlen := val.Len()
+	log.Info(fmt.Sprintf("in decodebyte array %+v \n", val))
 	switch kind {
 	case Byte:
 		if vlen == 0 {
@@ -794,6 +796,8 @@ func (s *Stream) Decode(val interface{}) error {
 	if val == nil {
 		return errDecodeIntoNil
 	}
+
+	log.Info(fmt.Sprintf("in decode %+v \n", val))
 	rval := reflect.ValueOf(val)
 	rtyp := rval.Type()
 	if rtyp.Kind() != reflect.Ptr {
@@ -806,8 +810,10 @@ func (s *Stream) Decode(val interface{}) error {
 	if err != nil {
 		return err
 	}
-
+	log.Info(fmt.Sprintf("in decode %+v \n", rval.Elem()))
 	err = info.decoder(s, rval.Elem())
+	log.Info(fmt.Sprintf("in decode err %+v \n", err))
+
 	if decErr, ok := err.(*decodeError); ok && len(decErr.ctx) > 0 {
 		// add decode target type to error so context has more meaning
 		decErr.ctx = append(decErr.ctx, fmt.Sprint("(", rtyp.Elem(), ")"))

@@ -72,9 +72,9 @@ func runGsoc(t *testing.T, args ...string) *testgsoc {
 			if i < len(args)-1 {
 				tt.Datadir = args[i+1]
 			}
-		case arg == "-etherbase" || arg == "--etherbase":
+		case arg == "-socerbase" || arg == "--socerbase":
 			if i < len(args)-1 {
-				tt.Etherbase = args[i+1]
+				tt.Socerbase = args[i+1]
 			}
 		}
 	}

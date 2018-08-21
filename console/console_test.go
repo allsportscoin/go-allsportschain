@@ -29,7 +29,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/consensus/sochash"
 	"github.com/allsportschain/go-allsportschain/core"
-	"github.com/allsportschain/go-allsportschain/eth"
+	"github.com/allsportschain/go-allsportschain/soc"
 	"github.com/allsportschain/go-allsportschain/internal/jsre"
 	"github.com/allsportschain/go-allsportschain/node"
 )
@@ -75,7 +75,7 @@ func (p *hookedPrompter) SetWordCompleter(completer WordCompleter) {}
 type tester struct {
 	workspace string
 	stack     *node.Node
-	ethereum  *eth.Ethereum
+	allsportschain  *soc.Allsportschain
 	console   *Console
 	input     *hookedPrompter
 	output    *bytes.Buffer
@@ -83,7 +83,7 @@ type tester struct {
 
 // newTester creates a test environment based on which the console can operate.
 // Please ensure you call Close() on the returned tester to avoid leaks.
-func newTester(t *testing.T, confOverride func(*eth.Config)) *tester {
+func newTester(t *testing.T, confOverride func(*soc.Config)) *tester {
 	// Create a temporary storage for the node keys and initialize it
 	workspace, err := ioutil.TempDir("", "console-tester-")
 	if err != nil {
@@ -95,17 +95,17 @@ func newTester(t *testing.T, confOverride func(*eth.Config)) *tester {
 	if err != nil {
 		t.Fatalf("failed to create node: %v", err)
 	}
-	ethConf := &eth.Config{
+	ethConf := &soc.Config{
 		Genesis:   core.DeveloperGenesisBlock(15, common.Address{}),
-		Etherbase: common.HexToAddress(testAddress),
-		Ethash: sochash.Config{
+		Socerbase: common.HexToAddress(testAddress),
+		Sochash: sochash.Config{
 			PowMode: sochash.ModeTest,
 		},
 	}
 	if confOverride != nil {
 		confOverride(ethConf)
 	}
-	if err = stack.Register(func(ctx *node.ServiceContext) (node.Service, error) { return eth.New(ctx, ethConf) }); err != nil {
+	if err = stack.Register(func(ctx *node.ServiceContext) (node.Service, error) { return soc.New(ctx, ethConf) }); err != nil {
 		t.Fatalf("failed to register Ethereum protocol: %v", err)
 	}
 	// Start the node and assemble the JavaScript console around it
@@ -131,13 +131,13 @@ func newTester(t *testing.T, confOverride func(*eth.Config)) *tester {
 		t.Fatalf("failed to create JavaScript console: %v", err)
 	}
 	// Create the final tester and return
-	var ethereum *eth.Ethereum
-	stack.Service(&ethereum)
+	var allsportschain *soc.Allsportschain
+	stack.Service(&allsportschain)
 
 	return &tester{
 		workspace: workspace,
 		stack:     stack,
-		ethereum:  ethereum,
+		allsportschain:  allsportschain,
 		console:   console,
 		input:     prompter,
 		output:    printer,
