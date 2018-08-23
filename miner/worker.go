@@ -134,7 +134,7 @@ type worker struct {
 	mining int32
 	atWork int32
 
-	//quitCh  chan struct{}
+	quitCh  chan struct{}
 	stopper chan struct{}
 }
 
@@ -156,7 +156,7 @@ func newWorker(config *params.ChainConfig, engine consensus.Engine, coinbase com
 		agents:         make(map[Agent]struct{}),
 		unconfirmed:    newUnconfirmedBlocks(eth.BlockChain(), miningLogAtDepth),
 
-		//quitCh:         make(chan struct{}, 1),
+		quitCh:         make(chan struct{}, 1),
 		stopper:        make(chan struct{}, 1),
 	}
 	// Subscribe NewTxsEvent for tx pool
@@ -168,7 +168,11 @@ func newWorker(config *params.ChainConfig, engine consensus.Engine, coinbase com
 	go worker.update()
 	go worker.wait()
 
-	worker.commitNewWork()
+	_, ok := engine.(*dpos.Dpos)
+	//if !ok {
+	log.Info(fmt.Sprintf("NewWorker in start--------"))
+	worker.commitNewWork(ok,0)
+	//}
 
 	return worker
 }
@@ -221,8 +225,11 @@ func (self *worker) start() {
 	for agent := range self.agents {
 		agent.Start()
 	}
+	_, ok := self.engine.(*dpos.Dpos)
 
-	go self.mintLoop()
+	if ok {
+		go self.mintLoop()
+	}
 }
 
 func (self *worker) stop() {
@@ -250,8 +257,8 @@ func (self *worker) mintLoop() {
 			self.mintBlock(now.Unix())
 		case <-self.stopper:
 			//to stop agent.mine
-			//close(self.quitCh)
-			//self.quitCh = make(chan struct{}, 1)
+			close(self.quitCh)
+			self.quitCh = make(chan struct{}, 1)
 			self.stopper = make(chan struct{}, 1)
 			return
 		}
@@ -277,7 +284,8 @@ func (self *worker) mintBlock(now int64) {
 		}
 		return
 	}
-	self.commitNewWork()
+	log.Info(fmt.Sprintf("commitNewWork in mintBlock--------"))
+	self.commitNewWork(true, now)
 	/*
 	work, err := self.commitNewWork()
 	if err != nil {
@@ -285,6 +293,7 @@ func (self *worker) mintBlock(now int64) {
 		return
 	}
 
+	work := self.current
 	//after engine.Seal, will put a Result to worker.recv
 	result, err := self.engine.Seal(self.chain, work.Block, self.quitCh)
 	if err != nil {
@@ -293,6 +302,7 @@ func (self *worker) mintBlock(now int64) {
 	}
 	self.recv <- &Result{work, result}
 	*/
+
 }
 
 func (self *worker) register(agent Agent) {
@@ -318,9 +328,15 @@ func (self *worker) update() {
 		select {
 		// Handle ChainHeadEvent
 		case <-self.chainHeadCh:
-			//close(self.quitCh)
-			//self.quitCh = make(chan struct{}, 1)
-			self.commitNewWork()
+
+			_, ok := self.engine.(*dpos.Dpos)
+			if ok {
+				close(self.quitCh)
+				self.quitCh = make(chan struct{}, 1)
+			}else{
+				log.Info(fmt.Sprintf("commitNewWork in worker.update--------"))
+				self.commitNewWork(false,0)
+			}
 
 		// Handle ChainSideEvent
 		case ev := <-self.chainSideCh:
@@ -453,7 +469,7 @@ func (self *worker) makeCurrent(parent *types.Block, header *types.Header) error
 	return nil
 }
 
-func (self *worker) commitNewWork() {
+func (self *worker) commitNewWork(dpos bool,nowTime int64) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	self.uncleMu.Lock()
@@ -464,15 +480,20 @@ func (self *worker) commitNewWork() {
 	tstart := time.Now()
 	parent := self.chain.CurrentBlock()
 
-	tstamp := tstart.Unix()
-	if parent.Time().Cmp(new(big.Int).SetInt64(tstamp)) >= 0 {
-		tstamp = parent.Time().Int64() + 1
-	}
-	// this will ensure we're not going off too far in the future
-	if now := time.Now().Unix(); tstamp > now+1 {
-		wait := time.Duration(tstamp-now) * time.Second
-		log.Info("Mining too far in the future", "wait", common.PrettyDuration(wait))
-		time.Sleep(wait)
+	var  tstamp int64 = 0
+	if dpos{
+		tstamp = nowTime
+	}else {
+		tstamp = tstart.Unix()
+		if parent.Time().Cmp(new(big.Int).SetInt64(tstamp)) >= 0 {
+			tstamp = parent.Time().Int64() + 1
+		}
+		// this will ensure we're not going off too far in the future
+		if now := time.Now().Unix(); tstamp > now+1 {
+			wait := time.Duration(tstamp-now) * time.Second
+			log.Info("Mining too far in the future", "wait", common.PrettyDuration(wait))
+			time.Sleep(wait)
+		}
 	}
 
 	num := parent.Number()
@@ -557,7 +578,19 @@ func (self *worker) commitNewWork() {
 		log.Info("Commit new mining work", "number", work.Block.Number(), "txs", work.tcount, "uncles", len(uncles), "elapsed", common.PrettyDuration(time.Since(tstart)))
 		self.unconfirmed.Shift(work.Block.NumberU64() - 1)
 	}
-	self.push(work)
+
+	if dpos && self.mining == 1 {
+		//after engine.Seal, will put a Result to worker.recv
+		//we need quitCh to quit dpos seal when receive chainheadEvent
+		result, err := self.engine.Seal(self.chain, work.Block, self.quitCh)
+		if err != nil {
+			log.Error("Failed to seal the block", "err", err)
+			return
+		}
+		self.recv <- &Result{work, result}
+	}else {
+		self.push(work)
+	}
 	self.updateSnapshot()
 }
 

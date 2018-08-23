@@ -2,7 +2,6 @@ package dpos
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/big"
@@ -22,8 +21,8 @@ import (
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/rlp"
 	"github.com/allsportschain/go-allsportschain/rpc"
-	"github.com/allsportschain/go-allsportschain/trie"
 	lru "github.com/hashicorp/golang-lru"
+
 )
 
 const (
@@ -33,11 +32,9 @@ const (
 
 	blockInterval    = int64(10)
 	epochInterval    = int64(86400)
-	maxValidatorSize = 21
-	//safeSize         = maxValidatorSize*2/3 + 1
-	//consensusSize    = maxValidatorSize*2/3 + 1
-	safeSize         = 1
-	consensusSize    = 1
+	maxValidatorSize = 3
+	safeSize         = maxValidatorSize*2/3 + 1
+	consensusSize    = maxValidatorSize*2/3 + 1
 )
 
 var (
@@ -385,7 +382,7 @@ func (d *Dpos) Finalize(chain consensus.ChainReader, header *types.Header, state
 	}
 
 	//update mint count trie
-	updateMintCnt(parent.Time.Int64(), header.Time.Int64(), header.Validator, dposContext)
+	dposContext.UpdateMintCnt(parent.Time.Int64(), header.Time.Int64(), header.Validator, epochInterval)
 	header.DposContext = dposContext.ToProto()
 	return types.NewBlock(header, txs, uncles, receipts), nil
 }
@@ -416,6 +413,7 @@ func (d *Dpos) CheckValidator(lastBlock *types.Block, now int64) error {
 	if err != nil {
 		return err
 	}
+
 	if (validator == common.Address{}) || bytes.Compare(validator.Bytes(), d.signer.Bytes()) != 0 {
 		return ErrInvalidBlockValidator
 	}
@@ -431,16 +429,16 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 	if number == 0 {
 		return nil, errUnknownBlock
 	}
-	now := time.Now().Unix()
-	delay := NextSlot(now) - now
-	if delay > 0 {
-		select {
-		case <-stop:
-			return nil, nil
-		case <-time.After(time.Duration(delay) * time.Second):
-		}
-	}
-	block.Header().Time.SetInt64(time.Now().Unix())
+	//now := time.Now().Unix()
+	//delay := NextSlot(now) - now
+	//if delay > 0 {
+	//	select {
+	//	case <-stop:
+	//		return nil, nil
+	//	case <-time.After(time.Duration(delay) * time.Second):
+	//	}
+	//}
+	//block.Header().Time.SetInt64(time.Now().Unix())
 
 	// time's up, sign the block
 	sighash, err := d.signFn(accounts.Account{Address: d.signer}, sigHash(header).Bytes())
@@ -500,35 +498,4 @@ func PrevSlot(now int64) int64 {
 
 func NextSlot(now int64) int64 {
 	return int64((now+blockInterval-1)/blockInterval) * blockInterval
-}
-
-// update counts in MintCntTrie for the miner of newBlock
-func updateMintCnt(parentBlockTime, currentBlockTime int64, validator common.Address, dposContext *types.DposContext) {
-	currentMintCntTrie := dposContext.MintCntTrie()
-	currentEpoch := parentBlockTime / epochInterval
-	currentEpochBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(currentEpochBytes, uint64(currentEpoch))
-
-	cnt := int64(1)
-	newEpoch := currentBlockTime / epochInterval
-	// still during the currentEpochID
-	if currentEpoch == newEpoch {
-		iter := trie.NewIterator(currentMintCntTrie.NodeIterator(currentEpochBytes))
-
-		// when current is not genesis, read last count from the MintCntTrie
-		if iter.Next() {
-			cntBytes := currentMintCntTrie.Get(append(currentEpochBytes, validator.Bytes()...))
-
-			// not the first time to mint
-			if cntBytes != nil {
-				cnt = int64(binary.BigEndian.Uint64(cntBytes)) + 1
-			}
-		}
-	}
-
-	newCntBytes := make([]byte, 8)
-	newEpochBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(newEpochBytes, uint64(newEpoch))
-	binary.BigEndian.PutUint64(newCntBytes, uint64(cnt))
-	dposContext.MintCntTrie().TryUpdate(append(newEpochBytes, validator.Bytes()...), newCntBytes)
 }

@@ -21,7 +21,6 @@ import (
 	"github.com/allsportschain/go-allsportschain/consensus"
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/rpc"
-
 	"math/big"
 )
 
@@ -56,6 +55,27 @@ func (api *API) GetValidators(number *rpc.BlockNumber) ([]common.Address, error)
 	}
 	return validators, nil
 }
+// SetValidators retrieves the list of the validators at specified block
+func (api *API) SetValidators(number *rpc.BlockNumber, validators []common.Address) error {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	if header == nil {
+		return errUnknownBlock
+	}
+
+	epochTrie, err := types.NewEpochTrie(header.DposContext.EpochHash, api.dpos.db)
+	if err != nil {
+		return err
+	}
+	dposContext := types.DposContext{}
+	dposContext.SetEpoch(epochTrie)
+	dposContext.SetValidators(validators)
+	return nil
+}
 
 // GetConfirmedBlockNumber retrieves the latest irreversible block
 func (api *API) GetConfirmedBlockNumber() (*big.Int, error) {
@@ -68,4 +88,29 @@ func (api *API) GetConfirmedBlockNumber() (*big.Int, error) {
 		}
 	}
 	return header.Number, nil
+}
+
+//api for get all candidates form candidate trie
+func (api * API) GetCandidates(number *rpc.BlockNumber) ([]common.Address, error) {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	if header == nil {
+		return nil, errUnknownBlock
+	}
+
+	candidateTrie, err := types.NewCandidateTrie(header.DposContext.EpochHash, api.dpos.db)
+	if err != nil {
+		return nil, err
+	}
+	dposContext := types.DposContext{}
+	dposContext.SetEpoch(candidateTrie)
+	candidates, err := dposContext.GetValidators()
+	if err != nil {
+		return nil, err
+	}
+	return candidates, nil
 }

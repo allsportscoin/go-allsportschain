@@ -24,6 +24,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/accounts"
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/consensus"
+	"github.com/allsportschain/go-allsportschain/consensus/dpos"
 	"github.com/allsportschain/go-allsportschain/core"
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/types"
@@ -115,7 +116,12 @@ func (self *Miner) Start(coinbase common.Address) {
 
 	log.Info("Starting mining operation")
 	self.worker.start()
-	self.worker.commitNewWork()
+	//only not dpos will start commit work
+	_, ok := self.engine.(*dpos.Dpos)
+	if !ok {
+		log.Info(fmt.Sprintf("commitNewWork in start--------"))
+		self.worker.commitNewWork(false,0)
+	}
 
 }
 
