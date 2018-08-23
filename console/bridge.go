@@ -281,7 +281,7 @@ func (b *bridge) Send(call otto.FunctionCall) (response otto.Value) {
 	// Remarshal the request into a Go value.
 	JSON, _ := call.Otto.Object("JSON")
 	reqVal, err := JSON.Call("stringify", call.Argument(0))
-	log.Info(fmt.Sprintf("methods json data %+v\n",  reqVal))
+	log.Info(fmt.Sprintf("ltf_methods json data %+v\n",  reqVal))
 
 	if err != nil {
 		throwJSException(err.Error())

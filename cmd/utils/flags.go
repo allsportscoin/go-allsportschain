@@ -327,8 +327,8 @@ var (
 		Usage: "Target gas limit sets the artificial target gas floor for the blocks to mine",
 		Value: params.GenesisGasLimit,
 	}
-	EtherbaseFlag = cli.StringFlag{
-		Name:  "etherbase",
+	SocbaseFlag = cli.StringFlag{
+		Name:  "socbase",
 		Usage: "Public address for block mining rewards (default = first account created)",
 		Value: "0",
 	}
@@ -358,9 +358,9 @@ var (
 		Usage: "Record information useful for VM and contract debugging",
 	}
 	// Logging and debug settings
-	EthStatsURLFlag = cli.StringFlag{
-		Name:  "ethstats",
-		Usage: "Reporting URL of a ethstats service (nodename:secret@host:port)",
+	SocStatsURLFlag = cli.StringFlag{
+		Name:  "socstats",
+		Usage: "Reporting URL of a socstats service (nodename:secret@host:port)",
 	}
 	FakePoWFlag = cli.BoolFlag{
 		Name:  "fakepow",
@@ -766,7 +766,7 @@ func setIPC(ctx *cli.Context, cfg *node.Config) {
 }
 
 // makeDatabaseHandles raises out the number of allowed file handles per process
-// for Geth and returns half of the allowance to assign to the database.
+// for Gsoc and returns half of the allowance to assign to the database.
 func makeDatabaseHandles() int {
 	limit, err := fdlimit.Current()
 	if err != nil {
@@ -798,7 +798,7 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	log.Warn("-------------------------------------------------------------------")
 	log.Warn("Referring to accounts by order in the keystore folder is dangerous!")
 	log.Warn("This functionality is deprecated and will be removed in the future!")
-	log.Warn("Please use explicit addresses! (can search via `geth account list`)")
+	log.Warn("Please use explicit addresses! (can search via `gsoc account list`)")
 	log.Warn("-------------------------------------------------------------------")
 
 	accs := ks.Accounts()
@@ -811,10 +811,10 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 // setSocerbase retrieves the socerbase either from the directly specified
 // command line flags or from the keystore if CLI indexed.
 func setSocerbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *soc.Config) {
-	if ctx.GlobalIsSet(EtherbaseFlag.Name) {
-		account, err := MakeAddress(ks, ctx.GlobalString(EtherbaseFlag.Name))
+	if ctx.GlobalIsSet(SocbaseFlag.Name) {
+		account, err := MakeAddress(ks, ctx.GlobalString(SocbaseFlag.Name))
 		if err != nil {
-			Fatalf("Option %q: %v", EtherbaseFlag.Name, err)
+			Fatalf("Option %q: %v", SocbaseFlag.Name, err)
 		}
 		cfg.Socerbase = account.Address
 	}
@@ -865,11 +865,11 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 	if !(lightClient || lightServer) {
 		lightPeers = 0
 	}
-	ethPeers := cfg.MaxPeers - lightPeers
+	socPeers := cfg.MaxPeers - lightPeers
 	if lightClient {
-		ethPeers = 0
+		socPeers = 0
 	}
-	log.Info("Maximum peer count", "ETH", ethPeers, "LES", lightPeers, "total", cfg.MaxPeers)
+	log.Info("Maximum peer count", "SOC", socPeers, "LES", lightPeers, "total", cfg.MaxPeers)
 
 	if ctx.GlobalIsSet(MaxPendingPeersFlag.Name) {
 		cfg.MaxPendingPeers = ctx.GlobalInt(MaxPendingPeersFlag.Name)
@@ -977,7 +977,7 @@ func setTxPool(ctx *cli.Context, cfg *core.TxPoolConfig) {
 	}
 }
 
-func setEthash(ctx *cli.Context, cfg *soc.Config) {
+func setSochash(ctx *cli.Context, cfg *soc.Config) {
 	if ctx.GlobalIsSet(EthashCacheDirFlag.Name) {
 		cfg.Sochash.CacheDir = ctx.GlobalString(EthashCacheDirFlag.Name)
 	}
@@ -1046,7 +1046,7 @@ func SetShhConfig(ctx *cli.Context, stack *node.Node, cfg *whisper.Config) {
 	}
 }
 
-// SetSocConfig applies eth-related command line flags to the config.
+// SetSocConfig applies soc-related command line flags to the config.
 func SetSocConfig(ctx *cli.Context, stack *node.Node, cfg *soc.Config) {
 	// Avoid conflicting network flags
 	checkExclusive(ctx, DeveloperFlag, TestnetFlag, RinkebyFlag)
@@ -1058,7 +1058,7 @@ func SetSocConfig(ctx *cli.Context, stack *node.Node, cfg *soc.Config) {
 	setSocerbase(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO)
 	setTxPool(ctx, &cfg.TxPool)
-	setEthash(ctx, cfg)
+	setSochash(ctx, cfg)
 
 	switch {
 	case ctx.GlobalIsSet(SyncModeFlag.Name):
@@ -1198,20 +1198,20 @@ func RegisterShhService(stack *node.Node, cfg *whisper.Config) {
 	}
 }
 
-// RegisterEthStatsService configures the Ethereum Stats daemon and adds it to
+// RegisterSocStatsService configures the Allsportschain Stats daemon and adds it to
 // th egiven node.
-func RegisterEthStatsService(stack *node.Node, url string) {
+func RegisterSocStatsService(stack *node.Node, url string) {
 	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
-		// Retrieve both eth and les services
-		var ethServ *soc.Allsportschain
-		ctx.Service(&ethServ)
+		// Retrieve both soc and les services
+		var socServ *soc.Allsportschain
+		ctx.Service(&socServ)
 
 		var lesServ *les.LightAllsportschain
 		ctx.Service(&lesServ)
 
-		return socstats.New(url, ethServ, lesServ)
+		return socstats.New(url, socServ, lesServ)
 	}); err != nil {
-		Fatalf("Failed to register the Ethereum Stats service: %v", err)
+		Fatalf("Failed to register the Allsportschain Stats service: %v", err)
 	}
 }
 
@@ -1235,7 +1235,7 @@ func SetupMetrics(ctx *cli.Context) {
 
 		if enableExport {
 			log.Info("Enabling metrics export to InfluxDB")
-			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "geth.", map[string]string{
+			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "gsoc.", map[string]string{
 				"host": hosttag,
 			})
 		}

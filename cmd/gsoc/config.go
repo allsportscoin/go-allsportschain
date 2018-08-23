@@ -115,7 +115,6 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gsocConfig) {
 		Node:      defaultNodeConfig(),
 		Dashboard: dashboard.DefaultConfig,
 	}
-
 	// Load config file.
 	if file := ctx.GlobalString(configFileFlag.Name); file != "" {
 		if err := loadConfig(file, &cfg); err != nil {
@@ -130,8 +129,8 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gsocConfig) {
 		utils.Fatalf("Failed to create the protocol stack: %v", err)
 	}
 	utils.SetSocConfig(ctx, stack, &cfg.Soc)
-	if ctx.GlobalIsSet(utils.EthStatsURLFlag.Name) {
-		cfg.Ethstats.URL = ctx.GlobalString(utils.EthStatsURLFlag.Name)
+	if ctx.GlobalIsSet(utils.SocStatsURLFlag.Name) {
+		cfg.Ethstats.URL = ctx.GlobalString(utils.SocStatsURLFlag.Name)
 	}
 
 	utils.SetShhConfig(ctx, stack, &cfg.Shh)
@@ -173,7 +172,7 @@ func makeFullNode(ctx *cli.Context) *node.Node {
 
 	// Add the Ethereum Stats daemon if requested.
 	if cfg.Ethstats.URL != "" {
-		utils.RegisterEthStatsService(stack, cfg.Ethstats.URL)
+		utils.RegisterSocStatsService(stack, cfg.Ethstats.URL)
 	}
 	return stack
 }

@@ -152,7 +152,7 @@ func (e *GenesisMismatchError) Error() string {
 // The returned chain configuration is never nil.
 func SetupGenesisBlock(db socdb.Database, genesis *Genesis) (*params.ChainConfig, common.Hash, error) {
 	if genesis != nil && genesis.Config == nil {
-		return params.AllEthashProtocolChanges, common.Hash{}, errGenesisNoConfig
+		return params.AllSochashProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
 
 	// Just commit the new block if there is no stored genesis block.
@@ -214,7 +214,7 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	case ghash == params.TestnetGenesisHash:
 		return params.TestnetChainConfig
 	default:
-		return params.AllEthashProtocolChanges
+		return params.AllSochashProtocolChanges
 	}
 }
 
@@ -289,7 +289,7 @@ func (g *Genesis) Commit(db socdb.Database) (*types.Block, error) {
 
 	config := g.Config
 	if config == nil {
-		config = params.AllEthashProtocolChanges
+		config = params.AllSochashProtocolChanges
 	}
 	rawdb.WriteChainConfig(db, block.Hash(), config)
 	return block, nil

@@ -27,6 +27,8 @@ import (
 	"github.com/allsportschain/go-allsportschain/common/hexutil"
 	"github.com/allsportschain/go-allsportschain/crypto"
 	"github.com/allsportschain/go-allsportschain/rlp"
+	"github.com/allsportschain/go-allsportschain/log"
+	"fmt"
 )
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go
@@ -133,7 +135,8 @@ func (tx *Transaction) Validate() error {
 		if tx.To() == nil && (tx.Type() == Delegate || tx.Type() == UnDelegate) {
 			return errors.New("receipient was required")
 		}
-		if tx.Data() != nil {
+		if len(tx.Data()) > 0 {
+			log.Info(fmt.Sprintf("validate %v, %v", tx.Data(), tx.data.Payload))
 			return errors.New("payload should be empty")
 		}
 	}

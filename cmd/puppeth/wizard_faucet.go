@@ -120,10 +120,10 @@ func (w *wizard) deployFaucet() {
 	fmt.Println()
 	if infos.node.socstats == "" {
 		fmt.Printf("What should the node be called on the stats page?\n")
-		infos.node.socstats = w.readString() + ":" + w.conf.ethstats
+		infos.node.socstats = w.readString() + ":" + w.conf.socstats
 	} else {
 		fmt.Printf("What should the node be called on the stats page? (default = %s)\n", infos.node.socstats)
-		infos.node.socstats = w.readDefaultString(infos.node.socstats) + ":" + w.conf.ethstats
+		infos.node.socstats = w.readDefaultString(infos.node.socstats) + ":" + w.conf.socstats
 	}
 	// Load up the credential needed to release funds
 	if infos.node.keyJSON != "" {

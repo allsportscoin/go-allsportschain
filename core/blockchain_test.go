@@ -52,7 +52,7 @@ func newCanonical(engine consensus.Engine, n int, full bool) (socdb.Database, *B
 	)
 
 	// Initialize a fresh chain with only a genesis block
-	blockchain, _ := NewBlockChain(db, nil, params.AllEthashProtocolChanges, engine, vm.Config{})
+	blockchain, _ := NewBlockChain(db, nil, params.AllSochashProtocolChanges, engine, vm.Config{})
 	// Create and inject the requested chain
 	if n == 0 {
 		return db, blockchain, nil

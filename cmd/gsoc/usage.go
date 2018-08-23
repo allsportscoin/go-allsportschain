@@ -76,7 +76,7 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.RinkebyFlag,
 			utils.SyncModeFlag,
 			utils.GCModeFlag,
-			utils.EthStatsURLFlag,
+			utils.SocStatsURLFlag,
 			utils.IdentityFlag,
 			utils.LightServFlag,
 			utils.LightPeersFlag,
@@ -185,7 +185,7 @@ var AppHelpFlagGroups = []flagGroup{
 		Flags: []cli.Flag{
 			utils.MiningEnabledFlag,
 			utils.MinerThreadsFlag,
-			utils.EtherbaseFlag,
+			utils.SocbaseFlag,
 			utils.TargetGasLimitFlag,
 			utils.GasPriceFlag,
 			utils.ExtraDataFlag,

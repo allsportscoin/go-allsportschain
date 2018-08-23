@@ -31,12 +31,12 @@ func (w *wizard) deployExplorer() {
 		log.Error("No genesis block configured")
 		return
 	}
-	if w.conf.ethstats == "" {
-		log.Error("No ethstats server configured")
+	if w.conf.socstats == "" {
+		log.Error("No socstats server configured")
 		return
 	}
 	if w.conf.Genesis.Config.Sochash == nil {
-		log.Error("Only ethash network supported")
+		log.Error("Only sochash network supported")
 		return
 	}
 	// Select the server to interact with
@@ -88,12 +88,12 @@ func (w *wizard) deployExplorer() {
 
 	// Set a proper name to report on the stats page
 	fmt.Println()
-	if infos.ethstats == "" {
+	if infos.socstats == "" {
 		fmt.Printf("What should the explorer be called on the stats page?\n")
-		infos.ethstats = w.readString() + ":" + w.conf.ethstats
+		infos.socstats = w.readString() + ":" + w.conf.socstats
 	} else {
-		fmt.Printf("What should the explorer be called on the stats page? (default = %s)\n", infos.ethstats)
-		infos.ethstats = w.readDefaultString(infos.ethstats) + ":" + w.conf.ethstats
+		fmt.Printf("What should the explorer be called on the stats page? (default = %s)\n", infos.socstats)
+		infos.socstats = w.readDefaultString(infos.socstats) + ":" + w.conf.socstats
 	}
 	// Try to deploy the explorer on the host
 	nocache := false

@@ -80,6 +80,18 @@ web3._extend({
 			params: 0,
 			outputFormatter: web3._extend.utils.toBigNumber
 		}),
+		new web3._extend.Method({
+			name: 'getCandidates',
+			call: 'dpos_getCandidates',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'setValidators',
+			call: 'dpos_setValidators',
+			params: 2,
+			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, web3._extend.formatters.inputAddressFormatter]
+		}),
 	]
 });
 `

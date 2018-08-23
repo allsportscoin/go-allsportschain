@@ -10,6 +10,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/rlp"
 	"github.com/allsportschain/go-allsportschain/trie"
 	"github.com/allsportschain/go-allsportschain/socdb"
+	"encoding/binary"
 )
 
 type DposContext struct {
@@ -377,4 +378,46 @@ func (dc *DposContext) SetValidators(validators []common.Address) error {
 	}
 	dc.epochTrie.Update(key, validatorsRLP)
 	return nil
+}
+
+
+// update counts in MintCntTrie for the miner of newBlock
+func  (dc *DposContext) UpdateMintCnt(parentBlockTime, currentBlockTime int64, validator common.Address, epochInterval int64 ) {
+	currentMintCntTrie := dc.MintCntTrie()
+	currentEpoch := parentBlockTime / epochInterval
+	currentEpochBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(currentEpochBytes, uint64(currentEpoch))
+
+	cnt := int64(1)
+	newEpoch := currentBlockTime / epochInterval
+	// still during the currentEpochID
+	if currentEpoch == newEpoch {
+		iter := trie.NewIterator(currentMintCntTrie.NodeIterator(currentEpochBytes))
+
+		// when current is not genesis, read last count from the MintCntTrie
+		if iter.Next() {
+			cntBytes := currentMintCntTrie.Get(append(currentEpochBytes, validator.Bytes()...))
+
+			// not the first time to mint
+			if cntBytes != nil {
+				cnt = int64(binary.BigEndian.Uint64(cntBytes)) + 1
+			}
+		}
+	}
+
+	newCntBytes := make([]byte, 8)
+	newEpochBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(newEpochBytes, uint64(newEpoch))
+	binary.BigEndian.PutUint64(newCntBytes, uint64(cnt))
+	dc.MintCntTrie().TryUpdate(append(newEpochBytes, validator.Bytes()...), newCntBytes)
+}
+
+//get all candidates form candidate trie
+func (dc * DposContext) GetCandidates() ([]common.Address, error) {
+	var candidates []common.Address
+	iter := trie.NewIterator(dc.candidateTrie.NodeIterator(nil))
+	for iter.Next() {
+		candidates = append(candidates, common.BytesToAddress(iter.Value))
+	}
+	return candidates, nil
 }

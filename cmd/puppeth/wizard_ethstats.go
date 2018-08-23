@@ -25,7 +25,7 @@ import (
 
 // deployEthstats queries the user for various input on deploying an ethstats
 // monitoring server, after which it executes it.
-func (w *wizard) deployEthstats() {
+func (w *wizard) deploySocstats() {
 	// Select the server to interact with
 	server := w.selectServer()
 	if server == "" {
@@ -34,9 +34,9 @@ func (w *wizard) deployEthstats() {
 	client := w.servers[server]
 
 	// Retrieve any active ethstats configurations from the server
-	infos, err := checkEthstats(client, w.network)
+	infos, err := checkSocstats(client, w.network)
 	if err != nil {
-		infos = &ethstatsInfos{
+		infos = &socstatsInfos{
 			port:   80,
 			host:   client.server,
 			secret: "",
@@ -114,7 +114,7 @@ func (w *wizard) deployEthstats() {
 			trusted = append(trusted, client.address)
 		}
 	}
-	if out, err := deployEthstats(client, w.network, infos.port, infos.secret, infos.host, trusted, infos.banned, nocache); err != nil {
+	if out, err := deploySocstats(client, w.network, infos.port, infos.secret, infos.host, trusted, infos.banned, nocache); err != nil {
 		log.Error("Failed to deploy ethstats container", "err", err)
 		if len(out) > 0 {
 			fmt.Printf("%s\n", out)

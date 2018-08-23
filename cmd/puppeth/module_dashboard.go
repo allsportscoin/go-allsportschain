@@ -78,7 +78,7 @@ var dashboardContent = `
 						<div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
 							<div class="menu_section">
 								<ul class="nav side-menu">
-									{{if .EthstatsPage}}<li id="stats_menu"><a onclick="load('#stats')"><i class="fa fa-tachometer"></i> Network Stats</a></li>{{end}}
+									{{if .SocstatsPage}}<li id="stats_menu"><a onclick="load('#stats')"><i class="fa fa-tachometer"></i> Network Stats</a></li>{{end}}
 									{{if .ExplorerPage}}<li id="explorer_menu"><a onclick="load('#explorer')"><i class="fa fa-database"></i> Block Explorer</a></li>{{end}}
 									{{if .WalletPage}}<li id="wallet_menu"><a onclick="load('#wallet')"><i class="fa fa-address-book-o"></i> Browser Wallet</a></li>{{end}}
 									{{if .FaucetPage}}<li id="faucet_menu"><a onclick="load('#faucet')"><i class="fa fa-bath"></i> Crypto Faucet</a></li>{{end}}
@@ -117,7 +117,7 @@ var dashboardContent = `
 										<br/>
 										<p>To run an archive node, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and start Geth with:
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
-											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=1024 --syncmode=full{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
+											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=1024 --syncmode=full{{if .Socstats}} --socstats='{{.Socstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
 										</p>
 										<br/>
 										<p>You can download Geth from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
@@ -136,7 +136,7 @@ var dashboardContent = `
 										<br/>
 										<p>To run a full node, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and start Geth with:
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
-											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=512{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
+											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=512{{if .Socstats}} --socstats='{{.Socstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
 										</p>
 										<br/>
 										<p>You can download Geth from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
@@ -158,7 +158,7 @@ var dashboardContent = `
 										<br/>
 										<p>To run a light node, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and start Geth with:
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
-											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --syncmode=light{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
+											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --syncmode=light{{if .Socstats}} --socstats='{{.Socstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
 										</p>
 										<br/>
 										<p>You can download Geth from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
@@ -207,11 +207,11 @@ var dashboardContent = `
 										<p>To connect with the Ethereum Wallet, you'll need to initialize your private network first via Geth as the wallet does not currently support calling Geth directly. To initialize your local chain, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and run:
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
 										</p>
-										<p>With your local chain initialized, you can start the Ethereum Wallet:
-											<pre>ethereumwallet --rpc $HOME/.{{.Network}}/geth.ipc --node-networkid={{.NetworkID}} --node-datadir=$HOME/.{{.Network}}{{if .Ethstats}} --node-ethstats='{{.Ethstats}}'{{end}} --node-bootnodes={{.BootnodesFlat}}</pre>
+										<p>With your local chain initialized, you can start the Allsportschain Wallet:
+											<pre>ethereumwallet --rpc $HOME/.{{.Network}}/gsoc.ipc --node-networkid={{.NetworkID}} --node-datadir=$HOME/.{{.Network}}{{if .Socstats}} --node-socstats='{{.Socstats}}'{{end}} --node-bootnodes={{.BootnodesFlat}}</pre>
 										<p>
 										<br/>
-										<p>You can download the Ethereum Wallet from <a href="https://github.com/ethereum/mist/releases" target="about:blank">https://github.com/ethereum/mist/releases</a>.</p>
+										<p>You can download the Allsportschain Wallet from <a href="https://github.com/ethereum/mist/releases" target="about:blank">https://github.com/ethereum/mist/releases</a>.</p>
 									</div>
 								</div>
 							</div>
@@ -229,7 +229,7 @@ var dashboardContent = `
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
 										</p>
 										<p>With your local chain initialized, you can start Mist:
-											<pre>mist --rpc $HOME/.{{.Network}}/geth.ipc --node-networkid={{.NetworkID}} --node-datadir=$HOME/.{{.Network}}{{if .Ethstats}} --node-ethstats='{{.Ethstats}}'{{end}} --node-bootnodes={{.BootnodesFlat}}</pre>
+											<pre>mist --rpc $HOME/.{{.Network}}/gsoc.ipc --node-networkid={{.NetworkID}} --node-datadir=$HOME/.{{.Network}}{{if .Socstats}} --node-socstats='{{.Socstats}}'{{end}} --node-bootnodes={{.BootnodesFlat}}</pre>
 										<p>
 										<br/>
 										<p>You can download the Mist browser from <a href="https://github.com/ethereum/mist/releases" target="about:blank">https://github.com/ethereum/mist/releases</a>.</p>
@@ -416,7 +416,7 @@ try! node?.start();
 										<div class="clearfix"></div>
 									</div>
 									<div style="display: inline-block; vertical-align: bottom; width: 623px; margin-top: 16px;">
-										<p>Puppeth is a tool to aid you in creating a new Ethereum network down to the genesis block, bootnodes, signers, ethstats server, crypto faucet, wallet browsers, block explorer, dashboard and more; without the hassle that it would normally entail to manually configure all these services one by one.</p>
+										<p>Puppeth is a tool to aid you in creating a new Ethereum network down to the genesis block, bootnodes, signers, socstats server, crypto faucet, wallet browsers, block explorer, dashboard and more; without the hassle that it would normally entail to manually configure all these services one by one.</p>
 										<p>Puppeth uses ssh to dial in to remote servers, and builds its network components out of docker containers using docker-compose. The user is guided through the process via a command line wizard that does the heavy lifting and topology configuration automatically behind the scenes.</p>
 										<br/>
 										<p>Puppeth is distributed as part of the <a href="https://geth.ethereum.org/downloads/" target="about:blank">Geth &amp; Tools</a> bundles, but can also be installed separately via:<pre>go get github.com/allsportschain/go-allsportschain/cmd/puppeth</pre></p>
@@ -583,14 +583,14 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 		"Network":      network,
 		"Port":         config.port,
 		"VHost":        config.host,
-		"EthstatsPage": config.ethstats,
+		"EthstatsPage": config.socstats,
 		"ExplorerPage": config.explorer,
 		"WalletPage":   config.wallet,
 		"FaucetPage":   config.faucet,
 	})
 	files[filepath.Join(workdir, "docker-compose.yaml")] = composefile.Bytes()
 
-	statsLogin := fmt.Sprintf("yournode:%s", conf.ethstats)
+	statsLogin := fmt.Sprintf("yournode:%s", conf.socstats)
 	if !config.trusted {
 		statsLogin = ""
 	}
@@ -611,7 +611,7 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 		"Network":          network,
 		"NetworkID":        conf.Genesis.Config.ChainID,
 		"NetworkTitle":     strings.Title(network),
-		"EthstatsPage":     config.ethstats,
+		"SocstatsPage":     config.socstats,
 		"ExplorerPage":     config.explorer,
 		"WalletPage":       config.wallet,
 		"FaucetPage":       config.faucet,
@@ -690,7 +690,7 @@ type dashboardInfos struct {
 	port    int
 	trusted bool
 
-	ethstats string
+	socstats string
 	explorer string
 	wallet   string
 	faucet   string
@@ -702,7 +702,7 @@ func (info *dashboardInfos) Report() map[string]string {
 	return map[string]string{
 		"Website address":       info.host,
 		"Website listener port": strconv.Itoa(info.port),
-		"Ethstats service":      info.ethstats,
+		"Socstats service":      info.socstats,
 		"Explorer service":      info.explorer,
 		"Wallet service":        info.wallet,
 		"Faucet service":        info.faucet,
@@ -712,7 +712,7 @@ func (info *dashboardInfos) Report() map[string]string {
 // checkDashboard does a health-check against a dashboard container to verify if
 // it's running, and if yes, gathering a collection of useful infos about it.
 func checkDashboard(client *sshClient, network string) (*dashboardInfos, error) {
-	// Inspect a possible ethstats container on the host
+	// Inspect a possible socstats container on the host
 	infos, err := inspectContainer(client, fmt.Sprintf("%s_dashboard_1", network))
 	if err != nil {
 		return nil, err
@@ -743,7 +743,7 @@ func checkDashboard(client *sshClient, network string) (*dashboardInfos, error) 
 	return &dashboardInfos{
 		host:     host,
 		port:     port,
-		ethstats: infos.envvars["ETHSTATS_PAGE"],
+		socstats: infos.envvars["SOCSTATS_PAGE"],
 		explorer: infos.envvars["EXPLORER_PAGE"],
 		wallet:   infos.envvars["WALLET_PAGE"],
 		faucet:   infos.envvars["FAUCET_PAGE"],

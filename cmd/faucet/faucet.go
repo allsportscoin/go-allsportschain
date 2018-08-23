@@ -67,7 +67,7 @@ var (
 	socPortFlag = flag.Int("socport", 30303, "Listener port for the devp2p connection")
 	bootFlag    = flag.String("bootnodes", "", "Comma separated bootnode enode URLs to seed with")
 	netFlag     = flag.Uint64("network", 0, "Network ID to use for the Allsportschain protocol")
-	statsFlag   = flag.String("socstats", "", "Ethstats network monitoring auth string")
+	statsFlag   = flag.String("socstats", "", "socstats network monitoring auth string")
 
 	netnameFlag = flag.String("faucet.name", "", "Network name to assign to the faucet")
 	payoutFlag  = flag.Int("faucet.amount", 1, "Number of Socs to pay out per user request")
@@ -237,7 +237,7 @@ func newFaucet(genesis *core.Genesis, port int, enodes []*discv5.Node, network u
 	}); err != nil {
 		return nil, err
 	}
-	// Assemble the ethstats monitoring and reporting service'
+	// Assemble the socstats monitoring and reporting service'
 	if stats != "" {
 		if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
 			var serv *les.LightAllsportschain

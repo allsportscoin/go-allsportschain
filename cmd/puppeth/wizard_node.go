@@ -33,8 +33,8 @@ func (w *wizard) deployNode(boot bool) {
 		log.Error("No genesis block configured")
 		return
 	}
-	if w.conf.ethstats == "" {
-		log.Error("No ethstats server configured")
+	if w.conf.socstats == "" {
+		log.Error("No socstats server configured")
 		return
 	}
 	// Select the server to interact with
@@ -96,10 +96,10 @@ func (w *wizard) deployNode(boot bool) {
 	fmt.Println()
 	if infos.socstats == "" {
 		fmt.Printf("What should the node be called on the stats page?\n")
-		infos.socstats = w.readString() + ":" + w.conf.ethstats
+		infos.socstats = w.readString() + ":" + w.conf.socstats
 	} else {
 		fmt.Printf("What should the node be called on the stats page? (default = %s)\n", infos.socstats)
-		infos.socstats = w.readDefaultString(infos.socstats) + ":" + w.conf.ethstats
+		infos.socstats = w.readDefaultString(infos.socstats) + ":" + w.conf.socstats
 	}
 	// If the node is a miner/signer, load up needed credentials
 	if !boot {

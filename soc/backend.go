@@ -134,6 +134,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Allsportschain, error) {
 		bloomIndexer:   NewBloomIndexer(chainDb, params.BloomBitsBlocks),
 	}
 
+	soc.setAuthorize()
 	log.Info("Initialising Allsportschain protocol", "versions", ProtocolVersions, "network", config.NetworkId)
 
 	if !config.SkipBcVersionCheck {
@@ -356,25 +357,37 @@ func (s *Allsportschain) SetValidator(validator common.Address) {
 	s.lock.Unlock()
 }
 
-func (s *Allsportschain) StartMining(local bool) error {
+func (s *Allsportschain) setAuthorize() error{
 	validator, err := s.Validator()
 	if err != nil {
 		log.Error("Cannot start mining without validator", "err", err)
 		return fmt.Errorf("validator missing: %v", err)
 	}
-	eb, err := s.Socerbase()
-	if err != nil {
-		log.Error("Cannot start mining without socerbase", "err", err)
-		return fmt.Errorf("socerbase missing: %v", err)
-	}
+
 	if dpos, ok := s.engine.(*dpos.Dpos); ok {
-		wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
+		wallet, err := s.accountManager.Find(accounts.Account{Address: validator})
 		if wallet == nil || err != nil {
-			log.Error("Socerbase account unavailable locally", "err", err)
+			log.Error("validator account unavailable locally", "err", err)
 			return fmt.Errorf("signer missing: %v", err)
 		}
 		dpos.Authorize(validator, wallet.SignHash)
 	}
+	return nil
+}
+
+func (s *Allsportschain) StartMining(local bool) error {
+	sb, err := s.Socerbase()
+	if err != nil {
+		log.Error("Cannot start mining without socerbase", "err", err)
+		return fmt.Errorf("socerbase missing: %v", err)
+	}
+
+	err = s.setAuthorize()
+	if err != nil {
+		log.Error("Cannot start mining without set Authorize", "err", err)
+		return err
+	}
+
 	if local {
 		// If local (CPU) mining is started, we can disable the transaction rejection
 		// mechanism introduced to speed sync times. CPU mining on mainnet is ludicrous
@@ -382,7 +395,7 @@ func (s *Allsportschain) StartMining(local bool) error {
 		// will ensure that private networks work in single miner mode too.
 		atomic.StoreUint32(&s.protocolManager.acceptTxs, 1)
 	}
-	go s.miner.Start(eb)
+	go s.miner.Start(sb)
 	return nil
 }
 
