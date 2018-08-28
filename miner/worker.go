@@ -110,7 +110,7 @@ type worker struct {
 	agents map[Agent]struct{}
 	recv   chan *Result
 
-	eth     Backend
+	soc     Backend
 	chain   *core.BlockChain
 	proc    core.Validator
 	chainDb socdb.Database
@@ -138,32 +138,32 @@ type worker struct {
 	stopper chan struct{}
 }
 
-func newWorker(config *params.ChainConfig, engine consensus.Engine, coinbase common.Address, eth Backend, mux *event.TypeMux) *worker {
+func newWorker(config *params.ChainConfig, engine consensus.Engine, coinbase common.Address, soc Backend, mux *event.TypeMux) *worker {
 	worker := &worker{
 		config:         config,
 		engine:         engine,
-		eth:            eth,
+		soc:            soc,
 		mux:            mux,
 		txsCh:          make(chan core.NewTxsEvent, txChanSize),
 		chainHeadCh:    make(chan core.ChainHeadEvent, chainHeadChanSize),
 		chainSideCh:    make(chan core.ChainSideEvent, chainSideChanSize),
-		chainDb:        eth.ChainDb(),
+		chainDb:        soc.ChainDb(),
 		recv:           make(chan *Result, resultQueueSize),
-		chain:          eth.BlockChain(),
-		proc:           eth.BlockChain().Validator(),
+		chain:          soc.BlockChain(),
+		proc:           soc.BlockChain().Validator(),
 		possibleUncles: make(map[common.Hash]*types.Block),
 		coinbase:       coinbase,
 		agents:         make(map[Agent]struct{}),
-		unconfirmed:    newUnconfirmedBlocks(eth.BlockChain(), miningLogAtDepth),
+		unconfirmed:    newUnconfirmedBlocks(soc.BlockChain(), miningLogAtDepth),
 
 		quitCh:         make(chan struct{}, 1),
 		stopper:        make(chan struct{}, 1),
 	}
 	// Subscribe NewTxsEvent for tx pool
-	worker.txsSub = eth.TxPool().SubscribeNewTxsEvent(worker.txsCh)
+	worker.txsSub = soc.TxPool().SubscribeNewTxsEvent(worker.txsCh)
 	// Subscribe events for blockchain
-	worker.chainHeadSub = eth.BlockChain().SubscribeChainHeadEvent(worker.chainHeadCh)
-	worker.chainSideSub = eth.BlockChain().SubscribeChainSideEvent(worker.chainSideCh)
+	worker.chainHeadSub = soc.BlockChain().SubscribeChainHeadEvent(worker.chainHeadCh)
+	worker.chainSideSub = soc.BlockChain().SubscribeChainSideEvent(worker.chainSideCh)
 
 	go worker.update()
 	go worker.wait()
@@ -395,11 +395,13 @@ func (self *worker) wait() {
 			for _, log := range work.state.Logs() {
 				log.BlockHash = block.Hash()
 			}
+			self.currentMu.Lock()
 			stat, err := self.chain.WriteBlockWithState(block, work.receipts, work.state)
 			if err != nil {
 				log.Error("Failed writing block to chain", "err", err)
 				continue
 			}
+			self.currentMu.Unlock()
 			// Broadcast the block and announce chain insertion event
 			self.mux.Post(core.NewMinedBlockEvent{Block: block})
 			var (
@@ -536,7 +538,7 @@ func (self *worker) commitNewWork(dpos bool,nowTime int64) {
 	//if self.config.DAOForkSupport && self.config.DAOForkBlock != nil && self.config.DAOForkBlock.Cmp(header.Number) == 0 {
 	//	misc.ApplyDAOHardFork(work.state)
 	//}
-	pending, err := self.eth.TxPool().Pending()
+	pending, err := self.soc.TxPool().Pending()
 	if err != nil {
 		log.Error("Failed to fetch pending transactions", "err", err)
 		return
@@ -549,30 +551,34 @@ func (self *worker) commitNewWork(dpos bool,nowTime int64) {
 		uncles    []*types.Header
 		badUncles []common.Hash
 	)
-	for hash, uncle := range self.possibleUncles {
-		if len(uncles) == 2 {
-			break
-		}
-		if err := self.commitUncle(work, uncle.Header()); err != nil {
-			log.Trace("Bad uncle found and will be removed", "hash", hash)
-			log.Trace(fmt.Sprint(uncle))
 
-			badUncles = append(badUncles, hash)
-		} else {
-			log.Debug("Committing new uncle to block", "hash", hash)
-			uncles = append(uncles, uncle.Header())
+	if !dpos {
+		for hash, uncle := range self.possibleUncles {
+			if len(uncles) == 2 {
+				break
+			}
+			if err := self.commitUncle(work, uncle.Header()); err != nil {
+				log.Trace("Bad uncle found and will be removed", "hash", hash)
+				log.Trace(fmt.Sprint(uncle))
+
+				badUncles = append(badUncles, hash)
+			} else {
+				log.Debug("Committing new uncle to block", "hash", hash)
+				uncles = append(uncles, uncle.Header())
+			}
+		}
+		for _, hash := range badUncles {
+			delete(self.possibleUncles, hash)
 		}
 	}
-	for _, hash := range badUncles {
-		delete(self.possibleUncles, hash)
-	}
+
 	// Create the new block to seal with the consensus engine
 	if work.Block, err = self.engine.Finalize(self.chain, header, work.state, work.txs, uncles, work.receipts, work.dposContext); err != nil {
 		log.Error("Failed to finalize block for sealing", "err", err)
 		return
 	}
 	work.Block.DposContext = work.dposContext
-	
+
 	// We only care about logging if we're actually mining.
 	if atomic.LoadInt32(&self.mining) == 1 {
 		log.Info("Commit new mining work", "number", work.Block.Number(), "txs", work.tcount, "uncles", len(uncles), "elapsed", common.PrettyDuration(time.Since(tstart)))

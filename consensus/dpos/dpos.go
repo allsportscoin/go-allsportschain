@@ -30,9 +30,9 @@ const (
 	extraSeal          = 65   // Fixed number of extra-data suffix bytes reserved for signer seal
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
 
-	blockInterval    = int64(10)
-	epochInterval    = int64(86400)
-	maxValidatorSize = 3
+	blockInterval    = int64(3)
+	epochInterval    = int64(210)
+	maxValidatorSize = 7
 	safeSize         = maxValidatorSize*2/3 + 1
 	consensusSize    = maxValidatorSize*2/3 + 1
 )
@@ -77,7 +77,7 @@ var (
 	ErrNilBlockHeader             = errors.New("nil block header returned")
 )
 var (
-	uncleHash = types.CalcUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
+	EmptyUncleHash = types.CalcUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
 )
 
 type Dpos struct {
@@ -171,7 +171,7 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 		return errInvalidDifficulty
 	}
 	// Ensure that the block doesn't contain any uncles which are meaningless in DPoS
-	if header.UncleHash != uncleHash {
+	if header.UncleHash != EmptyUncleHash {
 		return errInvalidUncleHash
 	}
 	// If all checks passed, validate any special fields for hard forks
@@ -214,9 +214,9 @@ func (d *Dpos) VerifyHeaders(chain consensus.ChainReader, headers []*types.Heade
 // VerifyUncles implements consensus.Engine, always returning an error for any
 // uncles as this consensus mechanism doesn't permit uncles.
 func (d *Dpos) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
-	if len(block.Uncles()) > 0 {
-		return errors.New("uncles not allowed")
-	}
+	//if len(block.Uncles()) > 0 {
+	//	return errors.New("uncles not allowed")
+	//}
 	return nil
 }
 
