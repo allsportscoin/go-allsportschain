@@ -466,6 +466,9 @@ func (d *Downloader) syncWithPeer(p *peerConnection, hash common.Hash, td *big.I
 		func() error { return d.fetchReceipts(origin + 1) },        // Receipts are retrieved during fast sync
 		func() error { return d.processHeaders(origin+1, pivot, td) },
 	}
+	//log.Info(fmt.Sprintf("syncWithPeer downloader: %v \n", d))
+	//log.Info(fmt.Sprintf("syncWithPeer downloader.mode: %v \n", d.mode))
+
 	if d.mode == FastSync {
 		fetchers = append(fetchers, func() error { return d.processFastSyncContent(latest) })
 	} else if d.mode == FullSync {
@@ -1370,7 +1373,7 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 func (d *Downloader) processFastSyncContent(latest *types.Header) error {
 	// Start syncing state of the reported head block. This should get us most of
 	// the state of the pivot block.
-	stateSync := d.syncState(latest.Root)
+	stateSync := d.syncState(latest.Root,false)
 	defer stateSync.Cancel()
 	go func() {
 		if err := stateSync.Wait(); err != nil && err != errCancelStateFetch {
@@ -1428,7 +1431,7 @@ func (d *Downloader) processFastSyncContent(latest *types.Header) error {
 			if oldPivot != P {
 				stateSync.Cancel()
 
-				stateSync = d.syncState(P.Header.Root)
+				stateSync = d.syncState(P.Header.Root, false)
 				defer stateSync.Cancel()
 				go func() {
 					if err := stateSync.Wait(); err != nil && err != errCancelStateFetch {
@@ -1534,7 +1537,7 @@ func (d *Downloader) syncDposContextState(context *types.DposContextProto) error
 		context.MintCntHash,
 	}
 	for _, root := range roots {
-		if err := d.syncState(root).Wait(); err != nil {
+		if err := d.syncState(root,true).Wait(); err != nil {
 			return err
 		}
 	}

@@ -22,6 +22,8 @@ import (
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/rlp"
 	"github.com/allsportschain/go-allsportschain/trie"
+	"github.com/allsportschain/go-allsportschain/log"
+	"fmt"
 )
 
 // NewStateSync create a new state trie download scheduler.
@@ -29,13 +31,22 @@ func NewStateSync(root common.Hash, database trie.DatabaseReader) *trie.Sync {
 	var syncer *trie.Sync
 	callback := func(leaf []byte, parent common.Hash) error {
 		var obj Account
+		log.Debug(fmt.Sprintf("ltf_NewStateSync  %v %v\n", leaf, root.String()))
 		if err := rlp.Decode(bytes.NewReader(leaf), &obj); err != nil {
+			log.Debug(fmt.Sprintf("ltf_NewStateSync err  %v %v\n", err, root.String()))
 			return err
 		}
+		log.Debug(fmt.Sprintf("ltf_NewStateSync done  %v %v\n", obj, root.String()))
 		syncer.AddSubTrie(obj.Root, 64, parent, nil)
 		syncer.AddRawEntry(common.BytesToHash(obj.CodeHash), 64, parent)
 		return nil
 	}
 	syncer = trie.NewSync(root, database, callback)
+	return syncer
+}
+// NewStateSync create a new state trie download scheduler.
+func NewDopsStateSync(root common.Hash, database trie.DatabaseReader) *trie.Sync {
+	var syncer *trie.Sync
+	syncer = trie.NewSync(root, database, nil)
 	return syncer
 }

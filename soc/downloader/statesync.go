@@ -58,8 +58,13 @@ type stateSyncStats struct {
 }
 
 // syncState starts downloading state with the given root hash.
-func (d *Downloader) syncState(root common.Hash) *stateSync {
-	s := newStateSync(d, root)
+func (d *Downloader) syncState(root common.Hash, isSyncDposContext bool) *stateSync {
+	var s *stateSync
+	if isSyncDposContext {
+		s = newDposStateSync(d, root)
+	} else{
+		s = newStateSync(d, root)
+	}
 	select {
 	case d.stateSyncStart <- s:
 	case <-d.quitCh:
@@ -248,6 +253,20 @@ func newStateSync(d *Downloader, root common.Hash) *stateSync {
 	}
 }
 
+// newStateSync creates a new state trie download scheduler. This method does not
+// yet start the sync. The user needs to call run to initiate.
+func newDposStateSync(d *Downloader, root common.Hash) *stateSync {
+	return &stateSync{
+		d:       d,
+		sched:   state.NewDopsStateSync(root, d.stateDB),
+		keccak:  sha3.NewKeccak256(),
+		tasks:   make(map[common.Hash]*stateTask),
+		deliver: make(chan *stateReq),
+		cancel:  make(chan struct{}),
+		done:    make(chan struct{}),
+	}
+}
+
 // run starts the task assignment and response processing loop, blocking until
 // it finishes, and finally notifying any goroutines waiting for the loop to
 // finish.
@@ -305,7 +324,7 @@ func (s *stateSync) loop() (err error) {
 
 		case req := <-s.deliver:
 			// Response, disconnect or timeout triggered, drop the peer if stalling
-			log.Trace("Received node data response", "peer", req.peer.id, "count", len(req.response), "dropped", req.dropped, "timeout", !req.dropped && req.timedOut())
+			log.Info("Received node data response", "peer", req.peer.id, "count", len(req.response), "dropped", req.dropped, "timeout", !req.dropped && req.timedOut())
 			if len(req.items) <= 2 && !req.dropped && req.timedOut() {
 				// 2 items are the minimum requested, if even that times out, we've no use of
 				// this peer at the moment.
@@ -410,9 +429,11 @@ func (s *stateSync) process(req *stateReq) error {
 
 	// Iterate over all the delivered data and inject one-by-one into the trie
 	progress := false
-
+	log.Info(fmt.Sprintf("ltf_response =  %v \n", req.response))
 	for _, blob := range req.response {
+		log.Info(fmt.Sprintf("ltf_blob =  %v \n", blob))
 		prog, hash, err := s.processNodeData(blob)
+		log.Info(fmt.Sprintf("ltf_prog, hash, err =  %v %v %v\n", prog, hash.String(), err))
 		switch err {
 		case nil:
 			s.numUncommitted++
@@ -423,7 +444,7 @@ func (s *stateSync) process(req *stateReq) error {
 		case trie.ErrAlreadyProcessed:
 			duplicate++
 		default:
-			return fmt.Errorf("invalid state node %s: %v", hash.TerminalString(), err)
+			return fmt.Errorf("ltf_invalid state node %s: %v", hash.String(), err)
 		}
 		if _, ok := req.tasks[hash]; ok {
 			delete(req.tasks, hash)
