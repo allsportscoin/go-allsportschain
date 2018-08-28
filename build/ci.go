@@ -58,14 +58,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/allsportschain/go-allsportschain/internal/build"
+    "github.com/allsportschain/go-allsportschain/internal/build"
+    "github.com/allsportschain/go-allsportschain/params"
+    sv "github.com/allsportschain/go-allsportschain/swarm/version"
 )
 
 var (
 	// Files that end up in the geth*.zip archive.
 	gethArchiveFiles = []string{
 		"COPYING",
-		executablePath("geth"),
+		executablePath("gsoc"),
 	}
 
 	// Files that end up in the geth-alltools*.zip archive.
@@ -77,52 +79,84 @@ var (
 		executablePath("gsoc"),
 		executablePath("puppeth"),
 		executablePath("rlpdump"),
-		executablePath("swarm"),
 		executablePath("wnode"),
+	}
+
+	// Files that end up in the swarm*.zip archive.
+	swarmArchiveFiles = []string{
+		"COPYING",
+		executablePath("swarm"),
 	}
 
 	// A debian package is created for all executables listed here.
 	debExecutables = []debExecutable{
 		{
-			Name:        "abigen",
-			Description: "Source code generator to convert Ethereum contract definitions into easy to use, compile-time type-safe Go packages.",
+			BinaryName:        "abigen",
+			Description: "Source code generator to convert Allsportschain contract definitions into easy to use, compile-time type-safe Go packages.",
 		},
 		{
-			Name:        "bootnode",
+			BinaryName:        "bootnode",
 			Description: "Allsportschain bootnode.",
 		},
 		{
-			Name:        "evm",
-			Description: "Developer utility version of the EVM (Ethereum Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode.",
+			BinaryName:        "evm",
+			Description: "Developer utility version of the EVM (Allsportschain Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode.",
 		},
 		{
-			Name:        "gsoc",
+			BinaryName:        "gsoc",
 			Description: "Allsportschain CLI client.",
 		},
 		{
-			Name:        "puppeth",
+			BinaryName:        "puppeth",
 			Description: "Allsportschain private network manager.",
 		},
 		{
-			Name:        "rlpdump",
+			BinaryName:        "rlpdump",
 			Description: "Developer utility tool that prints RLP structures.",
 		},
 		{
-			Name:        "swarm",
-			Description: "Ethereum Swarm daemon and tools",
-		},
-		{
-			Name:        "wnode",
-			Description: "Ethereum Whisper diagnostic tool",
+			BinaryName:        "wnode",
+			Description: "Allsportschain Whisper diagnostic tool",
 		},
 	}
+
+	// A debian package is created for all executables listed here.
+	debSwarmExecutables = []debExecutable{
+		{
+			BinaryName:  "swarm",
+			PackageName: "allsportschain-swarm",
+			Description: "Allsportschain Swarm daemon and tools",
+		},
+	}
+
+	debAllsportschain = debPackage{
+		Name:        "allsportschain",
+		Version:     params.Version,
+		Executables: debExecutables,
+	}
+
+	debSwarm = debPackage{
+		Name:        "allsportschain-swarm",
+		Version:     sv.Version,
+		Executables: debSwarmExecutables,
+	}
+
+	// Debian meta packages to build and push to Ubuntu PPA
+	debPackages = []debPackage{
+		debSwarm,
+		debAllsportschain,
+	}
+
+	// Packages to be cross-compiled by the xgo command
+	allCrossCompiledArchiveFiles = append(allToolsArchiveFiles, swarmArchiveFiles...)
 
 	// Distros for which packages are created.
 	// Note: vivid is unsupported because there is no golang-1.6 package for it.
 	// Note: wily is unsupported because it was officially deprecated on lanchpad.
 	// Note: yakkety is unsupported because it was officially deprecated on lanchpad.
 	// Note: zesty is unsupported because it was officially deprecated on lanchpad.
-	debDistros = []string{"trusty", "xenial", "artful", "bionic"}
+    // Note: artful is unsupported because it was officially deprecated on lanchpad.
+    debDistros = []string{"trusty", "xenial", "bionic", "cosmic"}
 )
 
 var GOBIN, _ = filepath.Abs(filepath.Join("build", "bin"))
@@ -188,7 +222,7 @@ func doInstall(cmdline []string) {
 
 		if minor < 9 {
 			log.Println("You have Go version", runtime.Version())
-			log.Println("go-ethereum requires at least Go version 1.9 and cannot")
+			log.Println("go-allsportschain requires at least Go version 1.9 and cannot")
 			log.Println("be compiled with an earlier version. Please upgrade your Go installation.")
 			os.Exit(1)
 		}
@@ -350,13 +384,12 @@ func doLint(cmdline []string) {
 }
 
 // Release Packaging
-
 func doArchive(cmdline []string) {
 	var (
 		arch   = flag.String("arch", runtime.GOARCH, "Architecture cross packaging")
 		atype  = flag.String("type", "zip", "Type of archive to write (zip|tar)")
 		signer = flag.String("signer", "", `Environment variable holding the signing key (e.g. LINUX_SIGNING_KEY)`)
-		upload = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
+		upload = flag.String("upload", "", `Destination to upload the archives (usually "gsocstore/builds")`)
 		ext    string
 	)
 	flag.CommandLine.Parse(cmdline)
@@ -370,26 +403,33 @@ func doArchive(cmdline []string) {
 	}
 
 	var (
-		env      = build.Env()
-		base     = archiveBasename(*arch, env)
-		geth     = "geth-" + base + ext
-		alltools = "geth-alltools-" + base + ext
+		env = build.Env()
+
+		basegeth = archiveBasename(*arch, params.ArchiveVersion(env.Commit))
+		gsoc     = "gsoc-" + basegeth + ext
+		alltools = "gsoc-alltools-" + basegeth + ext
+
+		baseswarm = archiveBasename(*arch, sv.ArchiveVersion(env.Commit))
+		swarm     = "swarm-" + baseswarm + ext
 	)
 	maybeSkipArchive(env)
-	if err := build.WriteArchive(geth, gethArchiveFiles); err != nil {
+	if err := build.WriteArchive(gsoc, gethArchiveFiles); err != nil {
 		log.Fatal(err)
 	}
 	if err := build.WriteArchive(alltools, allToolsArchiveFiles); err != nil {
 		log.Fatal(err)
 	}
-	for _, archive := range []string{geth, alltools} {
+	if err := build.WriteArchive(swarm, swarmArchiveFiles); err != nil {
+		log.Fatal(err)
+	}
+	for _, archive := range []string{gsoc, alltools, swarm} {
 		if err := archiveUpload(archive, *upload, *signer); err != nil {
 			log.Fatal(err)
 		}
 	}
 }
 
-func archiveBasename(arch string, env build.Environment) string {
+func archiveBasename(arch string, archiveVersion string) string {
 	platform := runtime.GOOS + "-" + arch
 	if arch == "arm" {
 		platform += os.Getenv("GOARM")
@@ -400,18 +440,7 @@ func archiveBasename(arch string, env build.Environment) string {
 	if arch == "ios" {
 		platform = "ios-all"
 	}
-	return platform + "-" + archiveVersion(env)
-}
-
-func archiveVersion(env build.Environment) string {
-	version := build.VERSION()
-	if isUnstableBuild(env) {
-		version += "-unstable"
-	}
-	if env.Commit != "" {
-		version += "-" + env.Commit[:8]
-	}
-	return version
+	return platform + "-" + archiveVersion
 }
 
 func archiveUpload(archive string, blobstore string, signer string) error {
@@ -461,7 +490,6 @@ func maybeSkipArchive(env build.Environment) {
 }
 
 // Debian Packaging
-
 func doDebianSource(cmdline []string) {
 	var (
 		signer  = flag.String("signer", "", `Signing key name, also used as package author`)
@@ -485,21 +513,23 @@ func doDebianSource(cmdline []string) {
 		build.MustRun(gpg)
 	}
 
-	// Create the packages.
-	for _, distro := range debDistros {
-		meta := newDebMetadata(distro, *signer, env, now)
-		pkgdir := stageDebianSource(*workdir, meta)
-		debuild := exec.Command("debuild", "-S", "-sa", "-us", "-uc")
-		debuild.Dir = pkgdir
-		build.MustRun(debuild)
+	// Create Debian packages and upload them
+	for _, pkg := range debPackages {
+		for _, distro := range debDistros {
+			meta := newDebMetadata(distro, *signer, env, now, pkg.Name, pkg.Version, pkg.Executables)
+			pkgdir := stageDebianSource(*workdir, meta)
+			debuild := exec.Command("debuild", "-S", "-sa", "-us", "-uc")
+			debuild.Dir = pkgdir
+			build.MustRun(debuild)
 
-		changes := fmt.Sprintf("%s_%s_source.changes", meta.Name(), meta.VersionString())
-		changes = filepath.Join(*workdir, changes)
-		if *signer != "" {
-			build.MustRunCommand("debsign", changes)
-		}
-		if *upload != "" {
-			build.MustRunCommand("dput", *upload, changes)
+			changes := fmt.Sprintf("%s_%s_source.changes", meta.Name(), meta.VersionString())
+			changes = filepath.Join(*workdir, changes)
+			if *signer != "" {
+				build.MustRunCommand("debsign", changes)
+			}
+			if *upload != "" {
+				build.MustRunCommand("dput", *upload, changes)
+			}
 		}
 	}
 }
@@ -524,8 +554,16 @@ func isUnstableBuild(env build.Environment) bool {
 	return true
 }
 
+type debPackage struct {
+	Name        string          // the name of the Debian package to produce, e.g. "ethereum", or "ethereum-swarm"
+	Version     string          // the clean version of the debPackage, e.g. 1.8.12 or 0.3.0, without any metadata
+	Executables []debExecutable // executables to be included in the package
+}
+
 type debMetadata struct {
 	Env build.Environment
+
+	PackageName string
 
 	// go-ethereum version being built. Note that this
 	// is not the debian package version. The package version
@@ -538,21 +576,33 @@ type debMetadata struct {
 }
 
 type debExecutable struct {
-	Name, Description string
+	PackageName string
+	BinaryName  string
+	Description string
 }
 
-func newDebMetadata(distro, author string, env build.Environment, t time.Time) debMetadata {
+// Package returns the name of the package if present, or
+// fallbacks to BinaryName
+func (d debExecutable) Package() string {
+	if d.PackageName != "" {
+		return d.PackageName
+	}
+	return d.BinaryName
+}
+
+func newDebMetadata(distro, author string, env build.Environment, t time.Time, name string, version string, exes []debExecutable) debMetadata {
 	if author == "" {
 		// No signing key, use default author.
-		author = "Ethereum Builds <fjl@ethereum.org>"
+		author = "Allsportschain Builds <>"
 	}
 	return debMetadata{
+		PackageName: name,
 		Env:         env,
 		Author:      author,
 		Distro:      distro,
-		Version:     build.VERSION(),
+		Version:     version,
 		Time:        t.Format(time.RFC1123Z),
-		Executables: debExecutables,
+		Executables: exes,
 	}
 }
 
@@ -560,9 +610,9 @@ func newDebMetadata(distro, author string, env build.Environment, t time.Time) d
 // on all executable packages.
 func (meta debMetadata) Name() string {
 	if isUnstableBuild(meta.Env) {
-		return "ethereum-unstable"
+		return meta.PackageName + "-unstable"
 	}
-	return "ethereum"
+	return meta.PackageName
 }
 
 // VersionString returns the debian version of the packages.
@@ -589,9 +639,20 @@ func (meta debMetadata) ExeList() string {
 // ExeName returns the package name of an executable package.
 func (meta debMetadata) ExeName(exe debExecutable) string {
 	if isUnstableBuild(meta.Env) {
-		return exe.Name + "-unstable"
+		return exe.Package() + "-unstable"
 	}
-	return exe.Name
+	return exe.Package()
+}
+
+// AllsportschainSwarmPackageName returns the name of the swarm package based on
+// environment, e.g. "allsportschain-swarm-unstable", or "allsportschain-swarm".
+// This is needed so that we make sure that "allsportschain" package,
+// depends on and installs "allsportschain-swarm"
+func (meta debMetadata) EthereumSwarmPackageName() string {
+	if isUnstableBuild(meta.Env) {
+		return debSwarm.Name + "-unstable"
+	}
+	return debSwarm.Name
 }
 
 // ExeConflicts returns the content of the Conflicts field
@@ -606,7 +667,7 @@ func (meta debMetadata) ExeConflicts(exe debExecutable) string {
 		// be preferred and the conflicting files should be handled via
 		// alternates. We might do this eventually but using a conflict is
 		// easier now.
-		return "ethereum, " + exe.Name
+		return "allsportschain, " +  exe.Package()
 	}
 	return ""
 }
@@ -623,17 +684,17 @@ func stageDebianSource(tmpdir string, meta debMetadata) (pkgdir string) {
 
 	// Put the debian build files in place.
 	debian := filepath.Join(pkgdir, "debian")
-	build.Render("build/deb.rules", filepath.Join(debian, "rules"), 0755, meta)
-	build.Render("build/deb.changelog", filepath.Join(debian, "changelog"), 0644, meta)
-	build.Render("build/deb.control", filepath.Join(debian, "control"), 0644, meta)
-	build.Render("build/deb.copyright", filepath.Join(debian, "copyright"), 0644, meta)
+	build.Render("build/deb/"+meta.PackageName+"/deb.rules", filepath.Join(debian, "rules"), 0755, meta)
+	build.Render("build/deb/"+meta.PackageName+"/deb.changelog", filepath.Join(debian, "changelog"), 0644, meta)
+	build.Render("build/deb/"+meta.PackageName+"/deb.control", filepath.Join(debian, "control"), 0644, meta)
+	build.Render("build/deb/"+meta.PackageName+"/deb.copyright", filepath.Join(debian, "copyright"), 0644, meta)
 	build.RenderString("8\n", filepath.Join(debian, "compat"), 0644, meta)
 	build.RenderString("3.0 (native)\n", filepath.Join(debian, "source/format"), 0644, meta)
 	for _, exe := range meta.Executables {
 		install := filepath.Join(debian, meta.ExeName(exe)+".install")
 		docs := filepath.Join(debian, meta.ExeName(exe)+".docs")
-		build.Render("build/deb.install", install, 0644, exe)
-		build.Render("build/deb.docs", docs, 0644, exe)
+		build.Render("build/deb/"+meta.PackageName+"/deb.install", install, 0644, exe)
+		build.Render("build/deb/"+meta.PackageName+"/deb.docs", docs, 0644, exe)
 	}
 
 	return pkgdir
@@ -646,7 +707,7 @@ func doWindowsInstaller(cmdline []string) {
 	var (
 		arch    = flag.String("arch", runtime.GOARCH, "Architecture for cross build packaging")
 		signer  = flag.String("signer", "", `Environment variable holding the signing key (e.g. WINDOWS_SIGNING_KEY)`)
-		upload  = flag.String("upload", "", `Destination to upload the archives (usually "gethstore/builds")`)
+		upload  = flag.String("upload", "", `Destination to upload the archives (usually "gsocstore/builds")`)
 		workdir = flag.String("workdir", "", `Output directory for packages (uses temp dir if unset)`)
 	)
 	flag.CommandLine.Parse(cmdline)
@@ -665,7 +726,7 @@ func doWindowsInstaller(cmdline []string) {
 			continue
 		}
 		allTools = append(allTools, filepath.Base(file))
-		if filepath.Base(file) == "geth.exe" {
+		if filepath.Base(file) == "gsoc.exe" {
 			gethTool = file
 		} else {
 			devTools = append(devTools, file)
@@ -676,10 +737,10 @@ func doWindowsInstaller(cmdline []string) {
 	// first section contains the geth binary, second section holds the dev tools.
 	templateData := map[string]interface{}{
 		"License":  "COPYING",
-		"Geth":     gethTool,
+		"Gsoc":     gethTool,
 		"DevTools": devTools,
 	}
-	build.Render("build/nsis.geth.nsi", filepath.Join(*workdir, "geth.nsi"), 0644, nil)
+	build.Render("build/nsis.gsoc.nsi", filepath.Join(*workdir, "gsoc.nsi"), 0644, nil)
 	build.Render("build/nsis.install.nsh", filepath.Join(*workdir, "install.nsh"), 0644, templateData)
 	build.Render("build/nsis.uninstall.nsh", filepath.Join(*workdir, "uninstall.nsh"), 0644, allTools)
 	build.Render("build/nsis.pathupdate.nsh", filepath.Join(*workdir, "PathUpdate.nsh"), 0644, nil)
@@ -690,18 +751,18 @@ func doWindowsInstaller(cmdline []string) {
 	// Build the installer. This assumes that all the needed files have been previously
 	// built (don't mix building and packaging to keep cross compilation complexity to a
 	// minimum).
-	version := strings.Split(build.VERSION(), ".")
+	version := strings.Split(params.Version, ".")
 	if env.Commit != "" {
 		version[2] += "-" + env.Commit[:8]
 	}
-	installer, _ := filepath.Abs("geth-" + archiveBasename(*arch, env) + ".exe")
+	installer, _ := filepath.Abs("gsoc-" + archiveBasename(*arch, params.ArchiveVersion(env.Commit)) + ".exe")
 	build.MustRunCommand("makensis.exe",
 		"/DOUTPUTFILE="+installer,
 		"/DMAJORVERSION="+version[0],
 		"/DMINORVERSION="+version[1],
 		"/DBUILDVERSION="+version[2],
 		"/DARCH="+*arch,
-		filepath.Join(*workdir, "geth.nsi"),
+		filepath.Join(*workdir, "gsoc.nsi"),
 	)
 
 	// Sign and publish installer.
@@ -717,7 +778,7 @@ func doAndroidArchive(cmdline []string) {
 		local  = flag.Bool("local", false, `Flag whether we're only doing a local build (skip Maven artifacts)`)
 		signer = flag.String("signer", "", `Environment variable holding the signing key (e.g. ANDROID_SIGNING_KEY)`)
 		deploy = flag.String("deploy", "", `Destination to deploy the archive (usually "https://oss.sonatype.org")`)
-		upload = flag.String("upload", "", `Destination to upload the archive (usually "gethstore/builds")`)
+		upload = flag.String("upload", "", `Destination to upload the archive (usually "gsocstore/builds")`)
 	)
 	flag.CommandLine.Parse(cmdline)
 	env := build.Env()
@@ -732,11 +793,11 @@ func doAndroidArchive(cmdline []string) {
 	// Build the Android archive and Maven resources
 	build.MustRun(goTool("get", "golang.org/x/mobile/cmd/gomobile", "golang.org/x/mobile/cmd/gobind"))
 	build.MustRun(gomobileTool("init", "--ndk", os.Getenv("ANDROID_NDK")))
-	build.MustRun(gomobileTool("bind", "-ldflags", "-s -w", "--target", "android", "--javapkg", "org.ethereum", "-v", "github.com/allsportschain/go-allsportschain/mobile"))
+	build.MustRun(gomobileTool("bind", "-ldflags", "-s -w", "--target", "android", "--javapkg", "org.allsportschain", "-v", "github.com/allsportschain/go-allsportschain/mobile"))
 
 	if *local {
 		// If we're building locally, copy bundle to build dir and skip Maven
-		os.Rename("geth.aar", filepath.Join(GOBIN, "geth.aar"))
+		os.Rename("gsoc.aar", filepath.Join(GOBIN, "gsoc.aar"))
 		return
 	}
 	meta := newMavenMetadata(env)
@@ -746,8 +807,8 @@ func doAndroidArchive(cmdline []string) {
 	maybeSkipArchive(env)
 
 	// Sign and upload the archive to Azure
-	archive := "geth-" + archiveBasename("android", env) + ".aar"
-	os.Rename("geth.aar", archive)
+	archive := "gsoc-" + archiveBasename("android", params.ArchiveVersion(env.Commit)) + ".aar"
+	os.Rename("gsoc.aar", archive)
 
 	if err := archiveUpload(archive, *upload, *signer); err != nil {
 		log.Fatal(err)
@@ -831,13 +892,13 @@ func newMavenMetadata(env build.Environment) mavenMetadata {
 		}
 	}
 	// Render the version and package strings
-	version := build.VERSION()
+	version := params.Version
 	if isUnstableBuild(env) {
 		version += "-SNAPSHOT"
 	}
 	return mavenMetadata{
 		Version:      version,
-		Package:      "geth-" + version,
+		Package:      "gsoc-" + version,
 		Develop:      isUnstableBuild(env),
 		Contributors: contribs,
 	}
@@ -866,7 +927,7 @@ func doXCodeFramework(cmdline []string) {
 		build.MustRun(bind)
 		return
 	}
-	archive := "geth-" + archiveBasename("ios", env)
+	archive := "gsoc-" + archiveBasename("ios", params.ArchiveVersion(env.Commit))
 	if err := os.Mkdir(archive, os.ModePerm); err != nil {
 		log.Fatal(err)
 	}
@@ -884,8 +945,8 @@ func doXCodeFramework(cmdline []string) {
 	// Prepare and upload a PodSpec to CocoaPods
 	if *deploy != "" {
 		meta := newPodMetadata(env, archive)
-		build.Render("build/pod.podspec", "Geth.podspec", 0755, meta)
-		build.MustRunCommand("pod", *deploy, "push", "Geth.podspec", "--allow-warnings", "--verbose")
+		build.Render("build/pod.podspec", "Gsoc.podspec", 0755, meta)
+		build.MustRunCommand("pod", *deploy, "push", "Gsoc.podspec", "--allow-warnings", "--verbose")
 	}
 }
 
@@ -922,7 +983,7 @@ func newPodMetadata(env build.Environment, archive string) podMetadata {
 			}
 		}
 	}
-	version := build.VERSION()
+	version := params.Version
 	if isUnstableBuild(env) {
 		version += "-unstable." + env.Buildnum
 	}
@@ -990,7 +1051,7 @@ func xgoTool(args []string) *exec.Cmd {
 
 func doPurge(cmdline []string) {
 	var (
-		store = flag.String("store", "", `Destination from where to purge archives (usually "gethstore/builds")`)
+		store = flag.String("store", "", `Destination from where to purge archives (usually "gsocstore/builds")`)
 		limit = flag.Int("days", 30, `Age threshold above which to delete unstalbe archives`)
 	)
 	flag.CommandLine.Parse(cmdline)
@@ -1018,23 +1079,14 @@ func doPurge(cmdline []string) {
 	}
 	for i := 0; i < len(blobs); i++ {
 		for j := i + 1; j < len(blobs); j++ {
-			iTime, err := time.Parse(time.RFC1123, blobs[i].Properties.LastModified)
-			if err != nil {
-				log.Fatal(err)
-			}
-			jTime, err := time.Parse(time.RFC1123, blobs[j].Properties.LastModified)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if iTime.After(jTime) {
+			if blobs[i].Properties.LastModified.After(blobs[j].Properties.LastModified) {
 				blobs[i], blobs[j] = blobs[j], blobs[i]
 			}
 		}
 	}
 	// Filter out all archives more recent that the given threshold
 	for i, blob := range blobs {
-		timestamp, _ := time.Parse(time.RFC1123, blob.Properties.LastModified)
-		if time.Since(timestamp) < time.Duration(*limit)*24*time.Hour {
+		if time.Since(blob.Properties.LastModified) < time.Duration(*limit)*24*time.Hour {
 			blobs = blobs[:i]
 			break
 		}

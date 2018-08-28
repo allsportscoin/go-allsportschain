@@ -64,6 +64,10 @@ func (b *LesApiBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNum
 	return b.soc.blockchain.GetHeaderByNumberOdr(ctx, uint64(blockNr))
 }
 
+func (b *LesApiBackend) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+    return b.soc.blockchain.GetHeaderByHash(hash), nil
+}
+
 func (b *LesApiBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error) {
 	header, err := b.HeaderByNumber(ctx, blockNr)
 	if header == nil || err != nil {

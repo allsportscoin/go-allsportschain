@@ -26,6 +26,7 @@ import (
 	"math/big"
 	"reflect"
 	"strings"
+	"github.com/allsportschain/go-allsportschain/log"
 )
 
 var (
@@ -805,9 +806,14 @@ func (s *Stream) Decode(val interface{}) error {
 	}
 	info, err := cachedTypeInfo(rtyp.Elem(), tags{})
 	if err != nil {
+		//log.Warn(fmt.Sprintf("cachedTypeInfo"),"rtyp.Elem()",rtyp.Elem(),"err",err)
 		return err
 	}
 	err = info.decoder(s, rval.Elem())
+	log.Debug("decoder","rval.Elem()",rval.Elem(),"err",err,"val",val)
+	if err != nil {
+		log.Debug("decoder err","rtyp.Elem()",rtyp.Elem(),"rval.Elem()",rval.Elem(),"rval.Elem().String()",rval.Elem().String(),"err",err,"val",val)
+	}
 
 	if decErr, ok := err.(*decodeError); ok && len(decErr.ctx) > 0 {
 		// add decode target type to error so context has more meaning

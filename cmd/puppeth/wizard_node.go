@@ -70,10 +70,10 @@ func (w *wizard) deployNode(boot bool) {
 	if w.conf.Genesis.Config.Sochash != nil && !boot {
 		fmt.Println()
 		if infos.sochashdir == "" {
-			fmt.Printf("Where should the ethash mining DAGs be stored on the remote machine?\n")
+			fmt.Printf("Where should the sochash mining DAGs be stored on the remote machine?\n")
 			infos.sochashdir = w.readString()
 		} else {
-			fmt.Printf("Where should the ethash mining DAGs be stored on the remote machine? (default = %s)\n", infos.sochashdir)
+			fmt.Printf("Where should the sochash mining DAGs be stored on the remote machine? (default = %s)\n", infos.sochashdir)
 			infos.sochashdir = w.readDefaultString(infos.sochashdir)
 		}
 	}

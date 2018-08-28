@@ -47,8 +47,8 @@ var (
 	// maxUint256 is a big integer representing 2^256-1
 	maxUint256 = new(big.Int).Exp(big.NewInt(2), big.NewInt(256), big.NewInt(0))
 
-	// sharedEthash is a full instance that can be shared between multiple users.
-	sharedEthash = New(Config{"", 3, 0, "", 1, 0, ModeNormal})
+	// sharedSochash is a full instance that can be shared between multiple users.
+	sharedSochash = New(Config{"", 3, 0, "", 1, 0, ModeNormal})
 
 	// algorithmRevision is the data structure version used for file naming.
 	algorithmRevision = 23
@@ -390,7 +390,7 @@ type Config struct {
 	PowMode        Mode
 }
 
-// Ethash is a consensus engine based on proof-of-work implementing the sochash
+// Sochash is a consensus engine based on proof-of-work implementing the sochash
 // algorithm.
 type Sochash struct {
 	config Config
@@ -487,7 +487,7 @@ func NewFullFaker() *Sochash {
 // NewShared creates a full sized sochash PoW shared between all requesters running
 // in the same process.
 func NewShared() *Sochash {
-	return &Sochash{shared: sharedEthash}
+	return &Sochash{shared: sharedSochash}
 }
 
 // cache tries to retrieve a verification cache for the specified block number

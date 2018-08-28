@@ -80,7 +80,7 @@ var (
 	}
 
 	// AllSochashProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Ethereum core developers into the Ethash consensus.
+	// and accepted by the Ethereum core developers into the Sochash consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
@@ -228,12 +228,12 @@ func (c *ChainConfig) IsConstantinople(num *big.Int) bool {
 //
 // The returned GasTable's fields shouldn't, under any circumstances, be changed.
 func (c *ChainConfig) GasTable(num *big.Int) GasTable {
-	return GasTableHomestead
-	/*
 	if num == nil {
 		return GasTableHomestead
 	}
 	switch {
+    case c.IsConstantinople(num):
+        return GasTableConstantinople
 	case c.IsEIP158(num):
 		return GasTableEIP158
 	case c.IsEIP150(num):
@@ -241,7 +241,6 @@ func (c *ChainConfig) GasTable(num *big.Int) GasTable {
 	default:
 		return GasTableHomestead
 	}
-	*/
 }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported

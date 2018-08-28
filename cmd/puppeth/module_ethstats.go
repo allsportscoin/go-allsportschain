@@ -122,7 +122,7 @@ func (info *socstatsInfos) Report() map[string]string {
 		"Website address":       info.host,
 		"Website listener port": strconv.Itoa(info.port),
 		"Login secret":          info.secret,
-		"Banned addresses":      fmt.Sprintf("%v", info.banned),
+        "Banned addresses":      strings.Join(info.banned, "\n"),
 	}
 }
 

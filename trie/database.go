@@ -471,16 +471,21 @@ func (db *Database) dereference(child common.Hash, parent common.Hash) {
 		// memcache any more) gets reinjected as a new node (short node split into full,
 		// then reverted into short), causing a cached node to have no parents. That is
 		// no problem in itself, but don't make maxint parents out of it.
-		node.parents--
-	}
-	if node.parents == 0 {
-		// Remove the node from the flush-list
-		if child == db.oldest {
-			db.oldest = node.flushNext
-		} else {
-			db.nodes[node.flushPrev].flushNext = node.flushNext
-			db.nodes[node.flushNext].flushPrev = node.flushPrev
-		}
+        node.parents--
+    }
+    if node.parents == 0 {
+        // Remove the node from the flush-list
+        switch child {
+        case db.oldest:
+            db.oldest = node.flushNext
+            db.nodes[node.flushNext].flushPrev = common.Hash{}
+        case db.newest:
+            db.newest = node.flushPrev
+            db.nodes[node.flushPrev].flushNext = common.Hash{}
+        default:
+            db.nodes[node.flushPrev].flushNext = node.flushNext
+            db.nodes[node.flushNext].flushPrev = node.flushPrev
+        }
 		// Dereference all children and delete the node
 		for _, hash := range node.childs() {
 			db.dereference(hash, child)
@@ -696,13 +701,18 @@ func (db *Database) uncache(hash common.Hash) {
 	if !ok {
 		return
 	}
-	// Node still exists, remove it from the flush-list
-	if hash == db.oldest {
-		db.oldest = node.flushNext
-	} else {
-		db.nodes[node.flushPrev].flushNext = node.flushNext
-		db.nodes[node.flushNext].flushPrev = node.flushPrev
-	}
+    // Node still exists, remove it from the flush-list
+    switch hash {
+    case db.oldest:
+        db.oldest = node.flushNext
+        db.nodes[node.flushNext].flushPrev = common.Hash{}
+    case db.newest:
+        db.newest = node.flushPrev
+        db.nodes[node.flushPrev].flushNext = common.Hash{}
+    default:
+        db.nodes[node.flushPrev].flushNext = node.flushNext
+        db.nodes[node.flushNext].flushPrev = node.flushPrev
+    }
 	// Uncache the node's subtries and remove the node itself too
 	for _, child := range node.childs() {
 		db.uncache(child)

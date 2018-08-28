@@ -50,13 +50,13 @@ func (w *wizard) makeGenesis() {
 	// Figure out which consensus engine to choose
 	fmt.Println()
 	fmt.Println("Which consensus engine to use? (default = clique)")
-	fmt.Println(" 1. Ethash - proof-of-work")
+	fmt.Println(" 1. Sochash - proof-of-work")
 	fmt.Println(" 2. Clique - proof-of-authority")
 
 	choice := w.read()
 	switch {
 	case choice == "1":
-		// In case of ethash, we're pretty much done
+		// In case of sochash, we're pretty much done
 		genesis.Config.Sochash = new(params.SochashConfig)
 		genesis.ExtraData = make([]byte, 32)
 

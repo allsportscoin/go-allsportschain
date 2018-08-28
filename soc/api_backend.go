@@ -70,6 +70,10 @@ func (b *SocAPIBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNum
 	return b.soc.blockchain.GetHeaderByNumber(uint64(blockNr)), nil
 }
 
+func (b *SocAPIBackend) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+    return b.soc.blockchain.GetHeaderByHash(hash), nil
+}
+
 func (b *SocAPIBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error) {
 	// Pending block is only known by the miner
 	if blockNr == rpc.PendingBlockNumber {

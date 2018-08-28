@@ -24,6 +24,8 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/vm"
 	"github.com/allsportschain/go-allsportschain/crypto"
 	"github.com/allsportschain/go-allsportschain/params"
+	"github.com/allsportschain/go-allsportschain/log"
+	"fmt"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -73,7 +75,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		allLogs = append(allLogs, receipt.Logs...)
 	}
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
-	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts,block.DposContext)
+	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts, block.DposContext)
 
 	return receipts, allLogs, *usedGas, nil
 }
@@ -99,7 +101,11 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	}
 
 	if msg.Type() != types.Normal {
-		applyDposMessage(dposContext, msg)
+		err := applyDposMessage(dposContext, msg)
+		if err != nil {
+			log.Error(fmt.Sprintf("addDposMessage faile %v \n", err))
+			return nil, 0, err
+		}
 	}
 	// Update the state with pending changes
 	var root []byte
@@ -129,13 +135,13 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 func applyDposMessage(dposContext *types.DposContext, msg types.Message) error {
 	switch msg.Type() {
 	case types.Candidate:
-		dposContext.BecomeCandidate(msg.From())
+		return dposContext.BecomeCandidate(msg.From())
 	case types.UnCandidate:
-		dposContext.KickoutCandidate(msg.From())
+		return dposContext.KickoutCandidate(msg.From())
 	case types.Delegate:
-		dposContext.Delegate(msg.From(), *(msg.To()))
+		return dposContext.Delegate(msg.From(), *(msg.To()))
 	case types.UnDelegate:
-		dposContext.UnDelegate(msg.From(), *(msg.To()))
+		return dposContext.UnDelegate(msg.From(), *(msg.To()))
 	default:
 		return types.ErrInvalidType
 	}

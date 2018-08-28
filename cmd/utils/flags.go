@@ -98,7 +98,7 @@ func NewApp(gitCommit, usage string) *cli.App {
 	app.Author = ""
 	//app.Authors = nil
 	app.Email = ""
-	app.Version = params.Version
+	app.Version = params.VersionWithMeta
 	if len(gitCommit) >= 8 {
 		app.Version += "-" + gitCommit[:8]
 	}
@@ -211,32 +211,32 @@ var (
 		Usage: "Dashboard metrics collection refresh rate",
 		Value: dashboard.DefaultConfig.Refresh,
 	}
-	// Ethash settings
-	EthashCacheDirFlag = DirectoryFlag{
+	// Sochash settings
+	SochashCacheDirFlag = DirectoryFlag{
 		Name:  "sochash.cachedir",
 		Usage: "Directory to store the sochash verification caches (default = inside the datadir)",
 	}
-	EthashCachesInMemoryFlag = cli.IntFlag{
+	SochashCachesInMemoryFlag = cli.IntFlag{
 		Name:  "sochash.cachesinmem",
 		Usage: "Number of recent sochash caches to keep in memory (16MB each)",
 		Value: soc.DefaultConfig.Sochash.CachesInMem,
 	}
-	EthashCachesOnDiskFlag = cli.IntFlag{
+	SochashCachesOnDiskFlag = cli.IntFlag{
 		Name:  "sochash.cachesondisk",
 		Usage: "Number of recent sochash caches to keep on disk (16MB each)",
 		Value: soc.DefaultConfig.Sochash.CachesOnDisk,
 	}
-	EthashDatasetDirFlag = DirectoryFlag{
+	SochashDatasetDirFlag = DirectoryFlag{
 		Name:  "sochash.dagdir",
 		Usage: "Directory to store the sochash mining DAGs (default = inside home folder)",
 		Value: DirectoryString{soc.DefaultConfig.Sochash.DatasetDir},
 	}
-	EthashDatasetsInMemoryFlag = cli.IntFlag{
+	SochashDatasetsInMemoryFlag = cli.IntFlag{
 		Name:  "sochash.dagsinmem",
 		Usage: "Number of recent sochash mining DAGs to keep in memory (1+GB each)",
 		Value: soc.DefaultConfig.Sochash.DatasetsInMem,
 	}
-	EthashDatasetsOnDiskFlag = cli.IntFlag{
+	SochashDatasetsOnDiskFlag = cli.IntFlag{
 		Name:  "sochash.dagsondisk",
 		Usage: "Number of recent sochash mining DAGs to keep on disk (1+GB each)",
 		Value: soc.DefaultConfig.Sochash.DatasetsOnDisk,
@@ -644,8 +644,7 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 	for _, url := range urls {
 		node, err := discover.ParseNode(url)
 		if err != nil {
-			log.Error("Bootstrap URL invalid", "enode", url, "err", err)
-			continue
+            log.Crit("Bootstrap URL invalid", "enode", url, "err", err)
 		}
 		cfg.BootstrapNodes = append(cfg.BootstrapNodes, node)
 	}
@@ -978,23 +977,23 @@ func setTxPool(ctx *cli.Context, cfg *core.TxPoolConfig) {
 }
 
 func setSochash(ctx *cli.Context, cfg *soc.Config) {
-	if ctx.GlobalIsSet(EthashCacheDirFlag.Name) {
-		cfg.Sochash.CacheDir = ctx.GlobalString(EthashCacheDirFlag.Name)
+	if ctx.GlobalIsSet(SochashCacheDirFlag.Name) {
+		cfg.Sochash.CacheDir = ctx.GlobalString(SochashCacheDirFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashDatasetDirFlag.Name) {
-		cfg.Sochash.DatasetDir = ctx.GlobalString(EthashDatasetDirFlag.Name)
+	if ctx.GlobalIsSet(SochashDatasetDirFlag.Name) {
+		cfg.Sochash.DatasetDir = ctx.GlobalString(SochashDatasetDirFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashCachesInMemoryFlag.Name) {
-		cfg.Sochash.CachesInMem = ctx.GlobalInt(EthashCachesInMemoryFlag.Name)
+	if ctx.GlobalIsSet(SochashCachesInMemoryFlag.Name) {
+		cfg.Sochash.CachesInMem = ctx.GlobalInt(SochashCachesInMemoryFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashCachesOnDiskFlag.Name) {
-		cfg.Sochash.CachesOnDisk = ctx.GlobalInt(EthashCachesOnDiskFlag.Name)
+	if ctx.GlobalIsSet(SochashCachesOnDiskFlag.Name) {
+		cfg.Sochash.CachesOnDisk = ctx.GlobalInt(SochashCachesOnDiskFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashDatasetsInMemoryFlag.Name) {
-		cfg.Sochash.DatasetsInMem = ctx.GlobalInt(EthashDatasetsInMemoryFlag.Name)
+	if ctx.GlobalIsSet(SochashDatasetsInMemoryFlag.Name) {
+		cfg.Sochash.DatasetsInMem = ctx.GlobalInt(SochashDatasetsInMemoryFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashDatasetsOnDiskFlag.Name) {
-		cfg.Sochash.DatasetsOnDisk = ctx.GlobalInt(EthashDatasetsOnDiskFlag.Name)
+	if ctx.GlobalIsSet(SochashDatasetsOnDiskFlag.Name) {
+		cfg.Sochash.DatasetsOnDisk = ctx.GlobalInt(SochashDatasetsOnDiskFlag.Name)
 	}
 }
 
@@ -1160,8 +1159,8 @@ func SetDashboardConfig(ctx *cli.Context, cfg *dashboard.Config) {
 	cfg.Refresh = ctx.GlobalDuration(DashboardRefreshFlag.Name)
 }
 
-// RegisterEthService adds an Ethereum client to the stack.
-func RegisterEthService(stack *node.Node, cfg *soc.Config) {
+// RegisterSocService adds an Soc client to the stack.
+func RegisterSocService(stack *node.Node, cfg *soc.Config) {
 	var err error
 	if cfg.SyncMode == downloader.LightSync {
 		err = stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
@@ -1199,7 +1198,7 @@ func RegisterShhService(stack *node.Node, cfg *whisper.Config) {
 }
 
 // RegisterSocStatsService configures the Allsportschain Stats daemon and adds it to
-// th egiven node.
+// the given node.
 func RegisterSocStatsService(stack *node.Node, url string) {
 	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
 		// Retrieve both soc and les services

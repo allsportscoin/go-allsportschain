@@ -50,7 +50,7 @@ func TestConsoleWelcome(t *testing.T) {
 	gsoc.SetTemplateFunc("goos", func() string { return runtime.GOOS })
 	gsoc.SetTemplateFunc("goarch", func() string { return runtime.GOARCH })
 	gsoc.SetTemplateFunc("gover", runtime.Version)
-	gsoc.SetTemplateFunc("gsocver", func() string { return params.Version })
+	gsoc.SetTemplateFunc("gsocver", func() string { return params.VersionWithMeta })
 	gsoc.SetTemplateFunc("niltime", func() string { return time.Unix(0, 0).Format(time.RFC1123) })
 	gsoc.SetTemplateFunc("apis", func() string { return ipcAPIs })
 
@@ -133,7 +133,7 @@ func testAttachWelcome(t *testing.T, gsoc *testgsoc, endpoint, apis string) {
 	attach.SetTemplateFunc("goos", func() string { return runtime.GOOS })
 	attach.SetTemplateFunc("goarch", func() string { return runtime.GOARCH })
 	attach.SetTemplateFunc("gover", runtime.Version)
-	attach.SetTemplateFunc("gsocver", func() string { return params.Version })
+	attach.SetTemplateFunc("gsocver", func() string { return params.VersionWithMeta })
 	attach.SetTemplateFunc("etherbase", func() string { return gsoc.Etherbase })
 	attach.SetTemplateFunc("niltime", func() string { return time.Unix(0, 0).Format(time.RFC1123) })
 	attach.SetTemplateFunc("ipc", func() bool { return strings.HasPrefix(endpoint, "ipc") })

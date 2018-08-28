@@ -166,7 +166,7 @@ func newCppEthereumGenesisSpec(network string, genesis *core.Genesis) (*cppEther
 type parityChainSpec struct {
 	Name   string `json:"name"`
 	Engine struct {
-		Ethash struct {
+		Sochash struct {
 			Params struct {
 				MinimumDifficulty      *hexutil.Big `json:"minimumDifficulty"`
 				DifficultyBoundDivisor *hexutil.Big `json:"difficultyBoundDivisor"`
@@ -181,7 +181,7 @@ type parityChainSpec struct {
 				EIP100bTransition      uint64       `json:"eip100bTransition"`
 				EIP649Transition       uint64       `json:"eip649Transition"`
 			} `json:"params"`
-		} `json:"Ethash"`
+		} `json:"Sochash"`
 	} `json:"engine"`
 
 	Params struct {
@@ -259,7 +259,7 @@ type parityChainSpecAltBnPairingPricing struct {
 // newParityChainSpec converts a go-ethereum genesis block into a Parity specific
 // chain specification format.
 func newParityChainSpec(network string, genesis *core.Genesis, bootnodes []string) (*parityChainSpec, error) {
-	// Only ethash is currently supported between go-ethereum and Parity
+	// Only sochash is currently supported between go-ethereum and Parity
 	if genesis.Config.Sochash == nil {
 		return nil, errors.New("unsupported consensus engine")
 	}
@@ -268,18 +268,18 @@ func newParityChainSpec(network string, genesis *core.Genesis, bootnodes []strin
 		Name:  network,
 		Nodes: bootnodes,
 	}
-	spec.Engine.Ethash.Params.MinimumDifficulty = (*hexutil.Big)(params.MinimumDifficulty)
-	spec.Engine.Ethash.Params.DifficultyBoundDivisor = (*hexutil.Big)(params.DifficultyBoundDivisor)
-	spec.Engine.Ethash.Params.DurationLimit = (*hexutil.Big)(params.DurationLimit)
-	spec.Engine.Ethash.Params.BlockReward = (*hexutil.Big)(sochash.FrontierBlockReward)
-	spec.Engine.Ethash.Params.HomesteadTransition = genesis.Config.HomesteadBlock.Uint64()
-	spec.Engine.Ethash.Params.EIP150Transition = genesis.Config.EIP150Block.Uint64()
-	spec.Engine.Ethash.Params.EIP160Transition = genesis.Config.EIP155Block.Uint64()
-	spec.Engine.Ethash.Params.EIP161abcTransition = genesis.Config.EIP158Block.Uint64()
-	spec.Engine.Ethash.Params.EIP161dTransition = genesis.Config.EIP158Block.Uint64()
-	spec.Engine.Ethash.Params.EIP649Reward = (*hexutil.Big)(sochash.ByzantiumBlockReward)
-	spec.Engine.Ethash.Params.EIP100bTransition = genesis.Config.ByzantiumBlock.Uint64()
-	spec.Engine.Ethash.Params.EIP649Transition = genesis.Config.ByzantiumBlock.Uint64()
+	spec.Engine.Sochash.Params.MinimumDifficulty = (*hexutil.Big)(params.MinimumDifficulty)
+	spec.Engine.Sochash.Params.DifficultyBoundDivisor = (*hexutil.Big)(params.DifficultyBoundDivisor)
+	spec.Engine.Sochash.Params.DurationLimit = (*hexutil.Big)(params.DurationLimit)
+	spec.Engine.Sochash.Params.BlockReward = (*hexutil.Big)(sochash.FrontierBlockReward)
+	spec.Engine.Sochash.Params.HomesteadTransition = genesis.Config.HomesteadBlock.Uint64()
+	spec.Engine.Sochash.Params.EIP150Transition = genesis.Config.EIP150Block.Uint64()
+	spec.Engine.Sochash.Params.EIP160Transition = genesis.Config.EIP155Block.Uint64()
+	spec.Engine.Sochash.Params.EIP161abcTransition = genesis.Config.EIP158Block.Uint64()
+	spec.Engine.Sochash.Params.EIP161dTransition = genesis.Config.EIP158Block.Uint64()
+	spec.Engine.Sochash.Params.EIP649Reward = (*hexutil.Big)(sochash.ByzantiumBlockReward)
+	spec.Engine.Sochash.Params.EIP100bTransition = genesis.Config.ByzantiumBlock.Uint64()
+	spec.Engine.Sochash.Params.EIP649Transition = genesis.Config.ByzantiumBlock.Uint64()
 
 	spec.Params.MaximumExtraDataSize = (hexutil.Uint64)(params.MaximumExtraDataSize)
 	spec.Params.MinGasLimit = (hexutil.Uint64)(params.MinGasLimit)
@@ -341,9 +341,9 @@ func newParityChainSpec(network string, genesis *core.Genesis, bootnodes []strin
 	return spec, nil
 }
 
-// pyEthereumGenesisSpec represents the genesis specification format used by the
+// pyAllsportschainGenesisSpec represents the genesis specification format used by the
 // Python Ethereum implementation.
-type pyEthereumGenesisSpec struct {
+type pyAllsportschainGenesisSpec struct {
 	Nonce      hexutil.Bytes     `json:"nonce"`
 	Timestamp  hexutil.Uint64    `json:"timestamp"`
 	ExtraData  hexutil.Bytes     `json:"extraData"`
@@ -355,14 +355,14 @@ type pyEthereumGenesisSpec struct {
 	ParentHash common.Hash       `json:"parentHash"`
 }
 
-// newPyEthereumGenesisSpec converts a go-ethereum genesis block into a Parity specific
+// newPyAllsportschainGenesisSpec converts a go-ethereum genesis block into a Parity specific
 // chain specification format.
-func newPyEthereumGenesisSpec(network string, genesis *core.Genesis) (*pyEthereumGenesisSpec, error) {
-	// Only ethash is currently supported between go-ethereum and pyethereum
+func newPyAllsportschainGenesisSpec(network string, genesis *core.Genesis) (*pyAllsportschainGenesisSpec, error) {
+	// Only sochash is currently supported between go-ethereum and pyethereum
 	if genesis.Config.Sochash == nil {
 		return nil, errors.New("unsupported consensus engine")
 	}
-	spec := &pyEthereumGenesisSpec{
+	spec := &pyAllsportschainGenesisSpec{
 		Timestamp:  (hexutil.Uint64)(genesis.Timestamp),
 		ExtraData:  genesis.ExtraData,
 		GasLimit:   (hexutil.Uint64)(genesis.GasLimit),

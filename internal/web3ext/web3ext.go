@@ -87,10 +87,10 @@ web3._extend({
 			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
-			name: 'setValidators',
-			call: 'dpos_setValidators',
-			params: 2,
-			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, web3._extend.formatters.inputAddressFormatter]
+			name: 'getAddrVote',
+			call: 'dpos_getAddrVote',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
 		}),
 	]
 });

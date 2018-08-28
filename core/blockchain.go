@@ -328,7 +328,7 @@ func (bc *BlockChain) FastSyncCommitHead(hash common.Hash) error {
 	bc.currentBlock.Store(block)
 	bc.mu.Unlock()
 
-	log.Info("Committed new head block", "number", block.Number(), "hash", hash)
+	log.Info("ltf_Committed new head block", "number", block.Number(), "hash", hash.String())
 	return nil
 }
 
@@ -451,15 +451,19 @@ func (bc *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
 	}
 	log.Info("Exporting batch of blocks", "count", last-first+1)
 
+    start, reported := time.Now(), time.Now()
 	for nr := first; nr <= last; nr++ {
 		block := bc.GetBlockByNumber(nr)
 		if block == nil {
 			return fmt.Errorf("export failed on #%d: not found", nr)
 		}
-
 		if err := block.EncodeRLP(w); err != nil {
 			return err
 		}
+        if time.Since(reported) >= statsReportLimit {
+            log.Info("Exporting blocks", "exported", block.NumberU64()-first, "elapsed", common.PrettyDuration(time.Since(start)))
+            reported = time.Now()
+        }
 	}
 
 	return nil
@@ -1141,6 +1145,10 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 			parent = bc.GetBlock(block.ParentHash(), block.NumberU64()-1)
 		} else {
 			parent = chain[i-1]
+		}
+		block.DposContext, err = types.NewDposContextFromProto(bc.db, parent.Header().DposContext)
+		if err != nil {
+			return i, events, coalescedLogs, err
 		}
 		state, err := state.New(parent.Root(), bc.stateCache)
 		if err != nil {

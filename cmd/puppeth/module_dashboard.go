@@ -657,7 +657,7 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 		paritySpecJSON, _ := json.Marshal(paritySpec)
 		files[filepath.Join(workdir, network+"-parity.json")] = paritySpecJSON
 
-		pyethSpec, err := newPyEthereumGenesisSpec(network, conf.Genesis)
+		pyethSpec, err := newPyAllsportschainGenesisSpec(network, conf.Genesis)
 		if err != nil {
 			return nil, err
 		}

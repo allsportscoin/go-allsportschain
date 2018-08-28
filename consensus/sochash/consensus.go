@@ -35,7 +35,7 @@ import (
 	//"hash"
 )
 
-// Ethash proof-of-work protocol constants.
+// Sochash proof-of-work protocol constants.
 var (
 	FrontierBlockReward    *big.Int = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
 	ByzantiumBlockReward   *big.Int = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium

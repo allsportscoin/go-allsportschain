@@ -421,3 +421,9 @@ func (dc * DposContext) GetCandidates() ([]common.Address, error) {
 	}
 	return candidates, nil
 }
+
+//get addr votes form vote trie
+func (dc * DposContext) GetAddrVote(addr common.Address) (common.Address, error) {
+	candidate, err := dc.voteTrie.TryGet(addr.Bytes())
+	return common.BytesToAddress(candidate), err
+}

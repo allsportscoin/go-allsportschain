@@ -94,11 +94,11 @@ func (s *Server) RegisterName(name string, rcvr interface{}) error {
 
 	methods, subscriptions := suitableCallbacks(rcvrVal, svc.typ)
 
-	// already a previous service register under given sname, merge methods/subscriptions
+	if len(methods) == 0 && len(subscriptions) == 0 {
+		return fmt.Errorf("Service %T doesn't have any suitable methods/subscriptions to expose", rcvr)
+	}
+	// already a previous service register under given name, merge methods/subscriptions
 	if regsvc, present := s.services[name]; present {
-		if len(methods) == 0 && len(subscriptions) == 0 {
-			return fmt.Errorf("Service %T doesn't have any suitable methods/subscriptions to expose", rcvr)
-		}
 		for _, m := range methods {
 			regsvc.callbacks[formatName(m.method.Name)] = m
 		}
@@ -110,11 +110,6 @@ func (s *Server) RegisterName(name string, rcvr interface{}) error {
 
 	svc.name = name
 	svc.callbacks, svc.subscriptions = methods, subscriptions
-
-	if len(svc.callbacks) == 0 && len(svc.subscriptions) == 0 {
-		return fmt.Errorf("Service %T doesn't have any suitable methods/subscriptions to expose", rcvr)
-	}
-
 	s.services[svc.name] = svc
 	return nil
 }
@@ -435,7 +430,7 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 		if callb, ok := svc.callbacks[r.method]; ok { // lookup RPC method
 			requests[i] = &serverRequest{id: r.id, svcname: svc.name, callb: callb}
 			if r.params != nil && len(callb.argTypes) > 0 {
-				log.Info(fmt.Sprintf("ltf_readRequest  ParseRequestArguments not sub %v %v",callb.argTypes, r.params))
+				log.Info(fmt.Sprintf("ltf_readRequest  ParseRequestArguments0 not sub %v %v",callb.argTypes, r.params))
 				if args, err := codec.ParseRequestArguments(callb.argTypes, r.params); err == nil {
 					requests[i].args = args
 				} else {
@@ -443,13 +438,13 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 				}
 
 			}
-			log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments  %v %v",requests[i].args, requests[i].err))
-
+			log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments1  %v %v",requests[i].args, requests[i].err))
 			continue
 		}
+		log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments2  %v %v",requests[i].args, requests[i].err))
 
 		requests[i] = &serverRequest{id: r.id, err: &methodNotFoundError{r.service, r.method}}
 	}
-
+	log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments3   %v %v",requests, batch))
 	return requests, batch, nil
 }

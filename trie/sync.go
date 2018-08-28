@@ -23,6 +23,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/socdb"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
+	"github.com/allsportschain/go-allsportschain/log"
 )
 
 // ErrNotRequested is returned by the trie sync when it's requested to process a
@@ -188,6 +189,7 @@ func (s *Sync) Process(results []SyncResult) (bool, int, error) {
 		}
 		// Decode the node data content and update the request
 		node, err := decodeNode(item.Hash[:], item.Data, 0)
+		log.Debug(fmt.Sprintf("test2: %v, %v , %v , %v", i, item.Hash[:],item.Data,node),"err",err)
 		if err != nil {
 			return committed, i, err
 		}
@@ -195,7 +197,9 @@ func (s *Sync) Process(results []SyncResult) (bool, int, error) {
 
 		// Create and schedule a request for all the children nodes
 		requests, err := s.children(request, node)
+		//log.Debug(fmt.Sprintf("test children: %v, %v ", i,node),"err",err)
 		if err != nil {
+			log.Debug("children","node",node,"err",err)
 			return committed, i, err
 		}
 		if len(requests) == 0 && request.deps == 0 {
@@ -276,11 +280,13 @@ func (s *Sync) children(req *request, object node) ([]*request, error) {
 	}
 	// Iterate over the children, and request all unknown ones
 	requests := make([]*request, 0, len(children))
+	log.Debug("children","len",len(children))
 	for _, child := range children {
 		// Notify any external watcher of a new key/value node
 		if req.callback != nil {
 			if node, ok := (child.node).(valueNode); ok {
 				if err := req.callback(node, req.hash); err != nil {
+					log.Debug("callback  return", "req.hash",req.hash,"node",node,"err",err)
 					return nil, err
 				}
 			}

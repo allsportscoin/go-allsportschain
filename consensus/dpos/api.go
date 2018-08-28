@@ -22,6 +22,11 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/rpc"
 	"math/big"
+	"github.com/allsportschain/go-allsportschain/trie"
+	"fmt"
+	"bytes"
+	"github.com/allsportschain/go-allsportschain/rlp"
+	"github.com/allsportschain/go-allsportschain/log"
 )
 
 // API is a user facing RPC API to allow controlling the delegate and voting
@@ -47,11 +52,12 @@ func (api *API) GetValidators(number *rpc.BlockNumber) ([]common.Address, error)
 	if err != nil {
 		return nil, err
 	}
-	dposContext := types.DposContext{}
-	dposContext.SetEpoch(epochTrie)
-	validators, err := dposContext.GetValidators()
-	if err != nil {
-		return nil, err
+
+	validators := []common.Address{}
+	key := []byte("validator")
+	validatorsRLP := epochTrie.Get(key)
+	if err := rlp.DecodeBytes(validatorsRLP, &validators); err != nil {
+		return nil, fmt.Errorf("failed to decode validators: %s", err)
 	}
 	return validators, nil
 }
@@ -94,23 +100,47 @@ func (api *API) GetConfirmedBlockNumber() (*big.Int, error) {
 func (api * API) GetCandidates(number *rpc.BlockNumber) ([]common.Address, error) {
 	var header *types.Header
 	if number == nil || *number == rpc.LatestBlockNumber {
+		log.Error("latestedbalocknumber")
 		header = api.chain.CurrentHeader()
 	} else {
+		log.Error("has number")
 		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
 	}
 	if header == nil {
 		return nil, errUnknownBlock
 	}
 
-	candidateTrie, err := types.NewCandidateTrie(header.DposContext.EpochHash, api.dpos.db)
+	candidateTrie, err := types.NewCandidateTrie(header.DposContext.CandidateHash, api.dpos.db)
 	if err != nil {
 		return nil, err
 	}
-	dposContext := types.DposContext{}
-	dposContext.SetEpoch(candidateTrie)
-	candidates, err := dposContext.GetValidators()
-	if err != nil {
-		return nil, err
+
+	candidates := []common.Address{}
+	iter := trie.NewIterator(candidateTrie.NodeIterator(nil))
+	for iter.Next() {
+		candidates = append(candidates, common.BytesToAddress(iter.Value))
 	}
+
 	return candidates, nil
+}
+
+//api for get candidate vote addr form vote trie
+func (api * API) GetAddrVote(candidate common.Address) ([]common.Address, error) {
+	header := api.chain.CurrentHeader()
+	voteTrie, err := types.NewVoteTrie(header.DposContext.VoteHash, api.dpos.db)
+
+	if err != nil {
+		return []common.Address{}, err
+	}
+
+	delegateList := make([]common.Address, 0)
+	voteIter := trie.NewIterator(voteTrie.NodeIterator(nil))
+	for voteIter.Next() {
+		dele := voteIter.Key
+		cand := voteIter.Value
+		if bytes.Equal(cand,candidate.Bytes()) {
+			delegateList = append(delegateList,common.BytesToAddress(dele))
+		}
+	}
+	return delegateList, nil
 }
