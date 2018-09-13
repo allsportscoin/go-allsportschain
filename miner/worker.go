@@ -594,7 +594,7 @@ func (self *worker) commitNewWork(dpos bool,nowTime int64) {
 			return
 		}
 		self.recv <- &Result{work, result}
-	}else {
+	} else if !dpos {
 		self.push(work)
 	}
 	self.updateSnapshot()

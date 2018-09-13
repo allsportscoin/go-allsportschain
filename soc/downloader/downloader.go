@@ -467,7 +467,7 @@ func (d *Downloader) syncWithPeer(p *peerConnection, hash common.Hash, td *big.I
 		func() error { return d.processHeaders(origin+1, pivot, td) },
 	}
 	//log.Info(fmt.Sprintf("syncWithPeer downloader: %v \n", d))
-	//log.Info(fmt.Sprintf("syncWithPeer downloader.mode: %v \n", d.mode))
+	//log.Info(fmt.Sprintf("syncWithPeer downloader.mode: %v \n", d.mode)d)
 
 	if d.mode == FastSync {
 		fetchers = append(fetchers, func() error { return d.processFastSyncContent(latest) })

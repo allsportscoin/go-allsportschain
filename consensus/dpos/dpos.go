@@ -42,9 +42,7 @@ var (
 	big8  = big.NewInt(8)
 	big32 = big.NewInt(32)
 
-	frontierBlockReward  *big.Int = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
-	byzantiumBlockReward *big.Int = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
-
+	defaultBlockReward  *big.Int = big.NewInt(5e+18)  // Block reward in wei for successfully mining a block
 	timeOfFirstBlock = int64(0)
 
 	confirmedBlockHead = []byte("confirmed-block-head")
@@ -348,13 +346,8 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 }
 
 func AccumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header) {
-	// Select the correct block reward based on chain progression
-	blockReward := frontierBlockReward
-	if config.IsByzantium(header.Number) {
-		blockReward = byzantiumBlockReward
-	}
-	// Accumulate the rewards for the miner and any included uncles
-	reward := new(big.Int).Set(blockReward)
+	// Accumulate the rewards for the miner
+	reward := new(big.Int).Set(defaultBlockReward)
 	state.AddBalance(header.Coinbase, reward)
 }
 

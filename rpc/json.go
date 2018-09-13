@@ -202,6 +202,7 @@ func parseRequest(incomingMsg json.RawMessage) ([]rpcRequest, bool, Error) {
 			method: in.Method, params: in.Payload}}, false, nil
 	}
 
+
 	elems := strings.Split(in.Method, serviceMethodSeparator)
 	if len(elems) != 2 {
 		return nil, false, &methodNotFoundError{in.Method, ""}

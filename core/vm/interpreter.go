@@ -132,7 +132,6 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 			in.intPool = nil
 		}()
 	}
-
 	// Increment the call depth which is restricted to 1024
 	in.evm.depth++
 	defer func() { in.evm.depth-- }()
@@ -189,6 +188,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 		// Get the operation from the jump table and validate the stack to ensure there are
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
+
 		operation := in.cfg.JumpTable[op]
 		if !operation.valid {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
@@ -196,6 +196,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 		if err := operation.validateStack(stack); err != nil {
 			return nil, err
 		}
+
 		// If the operation is valid, enforce and write restrictions
 		if err := in.enforceRestrictions(op, operation, stack); err != nil {
 			return nil, err
@@ -215,9 +216,11 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte) (ret []byte, err
 				return nil, errGasUintOverflow
 			}
 		}
+
 		// consume the gas and return an error if not enough gas is available.
 		// cost is explicitly set so that the capture state defer method can get the proper cost
 		cost, err = operation.gasCost(in.gasTable, in.evm, contract, stack, mem, memorySize)
+		//cost = 1
 		if err != nil || !contract.UseGas(cost) {
 			return nil, ErrOutOfGas
 		}

@@ -721,9 +721,10 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 		}
 	}
 	// Reject the transaction as invalid if it still fails at the highest allowance
+	// Reject the transaction as invalid if it still fails at the highest allowance
 	if hi == cap {
 		if !executable(hi) {
-			return 0, fmt.Errorf("gas required exceeds allowance or always failing transaction")
+			return 0, fmt.Errorf("gas required exceeds allowance or always failing transaction %v", hi)
 		}
 	}
 	return hexutil.Uint64(hi), nil
