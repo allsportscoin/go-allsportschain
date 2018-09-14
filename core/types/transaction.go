@@ -63,7 +63,7 @@ type txdata struct {
 	GasLimit     uint64          `json:"gas"      gencodec:"required"`
 	Recipient    *common.Address `json:"to"       rlp:"nil"` // nil means contract creation
 	Amount       *big.Int        `json:"value"    gencodec:"required"`
-	Type		 TxType          `json:"type"   gencodec:"required"`
+	Type		 TxType          `json:"type"     gencodec:"required"`
 	Payload      []byte          `json:"input"    gencodec:"required"`
 
 	// Signature values

@@ -251,7 +251,6 @@ func (s *Server) createSubscription(ctx context.Context, c ServerCodec, req *ser
 
 // handle executes a request and returns the response from the callback.
 func (s *Server) handle(ctx context.Context, codec ServerCodec, req *serverRequest) (interface{}, func()) {
-	log.Info(fmt.Sprintf("handle %v \n", req.args))
 	if req.err != nil {
 		return codec.CreateErrorResponse(&req.id, req.err), nil
 	}
@@ -287,7 +286,6 @@ func (s *Server) handle(ctx context.Context, codec ServerCodec, req *serverReque
 
 		return codec.CreateResponse(req.id, subid), activateSub
 	}
-	log.Info(fmt.Sprintf("handle 2 %v \n", req.args))
 
 	// regular RPC call, prepare arguments
 	if len(req.args) != len(req.callb.argTypes) {
@@ -304,7 +302,6 @@ func (s *Server) handle(ctx context.Context, codec ServerCodec, req *serverReque
 	if len(req.args) > 0 {
 		arguments = append(arguments, req.args...)
 	}
-	log.Info(fmt.Sprintf("handle 2 %v \n", arguments))
 
 	// execute RPC method and return result
 	reply := req.callb.method.Func.Call(arguments)
@@ -393,7 +390,7 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 		if r.isPubSub && strings.HasSuffix(r.method, unsubscribeMethodSuffix) {
 			requests[i] = &serverRequest{id: r.id, isUnsubscribe: true}
 			argTypes := []reflect.Type{reflect.TypeOf("")} // expect subscription id as first arg
-			log.Info(fmt.Sprintf("ltf_readRequest before parser method %v %v %v",svc.name, r.params, argTypes))
+			//log.Info(fmt.Sprintf("ltf_readRequest before parser method %v %v %v",svc.name, r.params, argTypes))
 			if args, err := codec.ParseRequestArguments(argTypes, r.params); err == nil {
 				requests[i].args = args
 			} else {
@@ -406,11 +403,11 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 			requests[i] = &serverRequest{id: r.id, err: &methodNotFoundError{r.service, r.method}}
 			continue
 		}
-		log.Info(fmt.Sprintf("ltf_readRequest lookup RPC all method %v",svc.callbacks))
+		//log.Info(fmt.Sprintf("ltf_readRequest lookup RPC all method %v",svc.callbacks))
 		if r.isPubSub { // eth_subscribe, r.method contains the subscription method name
 			if callb, ok := svc.subscriptions[r.method]; ok {
 				requests[i] = &serverRequest{id: r.id, svcname: svc.name, callb: callb}
-				log.Info(fmt.Sprintf("ltf_readRequest lookup RPC method %v %v",svc.name, callb))
+				//log.Info(fmt.Sprintf("ltf_readRequest lookup RPC method %v %v",svc.name, callb))
 				if r.params != nil && len(callb.argTypes) > 0 {
 					argTypes := []reflect.Type{reflect.TypeOf("")}
 					argTypes = append(argTypes, callb.argTypes...)
@@ -421,7 +418,7 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 					}
 				}
 			} else {
-				log.Info(fmt.Sprintf("ltf_readRequest lookup RPC method not sub %v %v",r.service, r.method))
+				//log.Info(fmt.Sprintf("ltf_readRequest lookup RPC method not sub %v %v",r.service, r.method))
 				requests[i] = &serverRequest{id: r.id, err: &methodNotFoundError{r.service, r.method}}
 			}
 			continue
@@ -430,7 +427,7 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 		if callb, ok := svc.callbacks[r.method]; ok { // lookup RPC method
 			requests[i] = &serverRequest{id: r.id, svcname: svc.name, callb: callb}
 			if r.params != nil && len(callb.argTypes) > 0 {
-				log.Info(fmt.Sprintf("ltf_readRequest  ParseRequestArguments0 not sub %v %v",callb.argTypes, r.params))
+				//log.Info(fmt.Sprintf("ltf_readRequest  ParseRequestArguments0 not sub %v %v",callb.argTypes, r.params))
 				if args, err := codec.ParseRequestArguments(callb.argTypes, r.params); err == nil {
 					requests[i].args = args
 				} else {
@@ -438,13 +435,13 @@ func (s *Server) readRequest(codec ServerCodec) ([]*serverRequest, bool, Error) 
 				}
 
 			}
-			log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments1  %v %v",requests[i].args, requests[i].err))
+			//log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments1  %v %v",requests[i].args, requests[i].err))
 			continue
 		}
-		log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments2  %v %v",requests[i].args, requests[i].err))
+		//log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments2  %v %v",requests[i].args, requests[i].err))
 
 		requests[i] = &serverRequest{id: r.id, err: &methodNotFoundError{r.service, r.method}}
 	}
-	log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments3   %v %v",requests, batch))
+	//log.Info(fmt.Sprintf("ltf_readRequest  after ParseRequestArguments3   %v %v",requests, batch))
 	return requests, batch, nil
 }

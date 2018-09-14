@@ -212,8 +212,15 @@ func parseRequest(incomingMsg json.RawMessage) ([]rpcRequest, bool, Error) {
 	if len(in.Payload) == 0 {
 		return []rpcRequest{{service: elems[0], method: elems[1], id: &in.Id}}, false, nil
 	}
+	//log.Info(fmt.Sprintf("ruiqiang, service[%v], method[%v]", elems[0], elems[1]))
 
-	return []rpcRequest{{service: elems[0], method: elems[1], id: &in.Id, params: in.Payload}}, false, nil
+	if strings.Compare("eth", elems[0]) == 0 {
+		return []rpcRequest{{service: "soc", method: elems[1], id: &in.Id, params: in.Payload}}, false, nil
+	} else {
+		return []rpcRequest{{service: elems[0], method: elems[1], id: &in.Id, params: in.Payload}}, false, nil
+	}
+
+	//return []rpcRequest{{service: elems[0], method: elems[1], id: &in.Id, params: in.Payload}}, false, nil
 }
 
 // parseBatchRequest will parse a batch request into a collection of requests from the given RawMessage, an indication
