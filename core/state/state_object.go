@@ -98,6 +98,7 @@ func (s *stateObject) empty() bool {
 type Account struct {
 	Nonce    uint64
 	Balance  *big.Int
+	CalledCnt  *big.Int
 	Root     common.Hash // merkle root of the storage trie
 	CodeHash []byte
 }
@@ -356,4 +357,25 @@ func (self *stateObject) Nonce() uint64 {
 // interface. Interfaces are awesome.
 func (self *stateObject) Value() *big.Int {
 	panic("Value on stateObject should never be called")
+}
+
+
+func (c *stateObject) AddCalledCnt(amount *big.Int) {
+	if amount.Sign() == 0 {
+		if c.empty() {
+			c.touch()
+		}
+
+		return
+	}
+	c.setCalledCnt(new(big.Int).Add(c.CalledCnt(), amount))
+}
+
+
+func (self *stateObject) setCalledCnt(amount *big.Int) {
+	self.data.CalledCnt = amount
+}
+
+func (self *stateObject) CalledCnt() *big.Int {
+	return self.data.CalledCnt
 }

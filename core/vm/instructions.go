@@ -26,6 +26,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/core/types"
 	"github.com/allsportschain/go-allsportschain/crypto"
 	"github.com/allsportschain/go-allsportschain/params"
+	"github.com/allsportschain/go-allsportschain/log"
 )
 
 var (
@@ -744,6 +745,11 @@ func opCall(pc *uint64,interpreter *EVMInterpreter, contract *Contract, memory *
 		stack.push(interpreter.intPool.getZero())
 	} else {
 		stack.push(interpreter.intPool.get().SetUint64(1))
+
+		if interpreter.evm.StateDB.GetCodeSize(contract.Address()) > 0 && interpreter.evm.StateDB.GetCodeSize(toAddr) > 0 && value.Cmp(common.Big0) == 1 {
+			interpreter.evm.StateDB.AddCalledCnt(toAddr,common.Big1)
+		}
+		log.Debug("opCall VM:","caller.Address",contract.Address(),"caller_code_size:",interpreter.evm.StateDB.GetCodeSize(contract.Address()), "to.Address",toAddr,"to_code_size:",interpreter.evm.StateDB.GetCodeSize(toAddr), "value",value,"CalledCnt",interpreter.evm.StateDB.GetCalledCnt(toAddr))
 	}
 	if err == nil || err == errExecutionReverted {
 		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)

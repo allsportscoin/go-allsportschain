@@ -5280,6 +5280,15 @@ Object.defineProperty(Soc.prototype, 'defaultAccount', {
 });
 
 var methods = function () {
+
+    var getCalledCnt = new Method({
+        name: 'getCalledCnt',
+        call: 'soc_getCalledCnt',
+        params: 2,
+        inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter],
+        outputFormatter: formatters.outputBigNumberFormatter
+    });
+
     var getBalance = new Method({
         name: 'getBalance',
         call: 'soc_getBalance',
@@ -5445,6 +5454,7 @@ var methods = function () {
     });
 
     return [
+        getCalledCnt,
         getBalance,
         getStorageAt,
         getCode,
