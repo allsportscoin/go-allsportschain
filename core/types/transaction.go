@@ -57,6 +57,7 @@ type Transaction struct {
 	from atomic.Value
 }
 
+//{4 0xc421cb11a0 60000 0xc4215883e0 0xc421cb1200 0 [49] 0xc421cb1220 0xc421cb1260 0xc421cb1280 <nil>}
 type txdata struct {
 	AccountNonce uint64          `json:"nonce"    gencodec:"required"`
 	Price        *big.Int        `json:"gasPrice" gencodec:"required"`
