@@ -184,43 +184,45 @@ func (c *ChainConfig) String() string {
 
 // IsHomestead returns whether num is either equal to the homestead block or greater.
 func (c *ChainConfig) IsHomestead(num *big.Int) bool {
-	return false
+	return isForked(big.NewInt(0), num)
 	//return isForked(c.HomesteadBlock, num)
 }
 
 // IsDAOFork returns whether num is either equal to the DAO fork block or greater.
 func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
-	return false
+	return isForked(big.NewInt(0), num)
 	//return isForked(c.DAOForkBlock, num)
 }
 
 // IsEIP150 returns whether num is either equal to the EIP150 fork block or greater.
 func (c *ChainConfig) IsEIP150(num *big.Int) bool {
-	return false
+	return isForked(big.NewInt(0), num)
 	//return isForked(c.EIP150Block, num)
 }
 
 // IsEIP155 returns whether num is either equal to the EIP155 fork block or greater.
 func (c *ChainConfig) IsEIP155(num *big.Int) bool {
-	return false
+	//return true
+	return isForked(big.NewInt(0), num)
 	//return isForked(c.EIP155Block, num)
+
 }
 
 // IsEIP158 returns whether num is either equal to the EIP158 fork block or greater.
 func (c *ChainConfig) IsEIP158(num *big.Int) bool {
-	return true
+	return isForked(big.NewInt(0), num)
 	//return isForked(c.EIP158Block, num)
 }
 
 // IsByzantium returns whether num is either equal to the Byzantium fork block or greater.
 func (c *ChainConfig) IsByzantium(num *big.Int) bool {
-	return false
+	return isForked(big.NewInt(0), num)
 	//return isForked(c.ByzantiumBlock, num)
 }
 
 // IsConstantinople returns whether num is either equal to the Constantinople fork block or greater.
 func (c *ChainConfig) IsConstantinople(num *big.Int) bool {
-	return true
+	return isForked(big.NewInt(0), num)
 	//return isForked(c.ConstantinopleBlock, num)
 }
 
