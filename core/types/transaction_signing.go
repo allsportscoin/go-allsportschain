@@ -49,6 +49,7 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 	default:
 		signer = FrontierSigner{}
 	}
+
 	return signer
 }
 
@@ -152,6 +153,7 @@ func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
+////{4 0xc421cb11a0 60000 0xc4215883e0 0xc421cb1200 0 [49] 0xc421cb1220 0xc421cb1260 0xc421cb1280 <nil>}
 func (s EIP155Signer) Hash(tx *Transaction) common.Hash {
 	return rlpHash([]interface{}{
 		tx.data.AccountNonce,
@@ -159,6 +161,7 @@ func (s EIP155Signer) Hash(tx *Transaction) common.Hash {
 		tx.data.GasLimit,
 		tx.data.Recipient,
 		tx.data.Amount,
+		tx.data.Type,
 		tx.data.Payload,
 		s.chainId, uint(0), uint(0),
 	})
@@ -211,6 +214,7 @@ func (fs FrontierSigner) Hash(tx *Transaction) common.Hash {
 		tx.data.GasLimit,
 		tx.data.Recipient,
 		tx.data.Amount,
+		tx.data.Type,
 		tx.data.Payload,
 	})
 }
@@ -235,6 +239,7 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	sig[64] = V
 	// recover the public key from the snature
 	pub, err := crypto.Ecrecover(sighash[:], sig)
+
 	if err != nil {
 		return common.Address{}, err
 	}
