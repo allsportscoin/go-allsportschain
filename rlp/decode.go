@@ -195,6 +195,7 @@ var (
 
 func makeDecoder(typ reflect.Type, tags tags) (dec decoder, err error) {
 	kind := typ.Kind()
+
 	switch {
 	case typ == rawValueType:
 		return decodeRawValue, nil
