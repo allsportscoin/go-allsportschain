@@ -62,13 +62,17 @@ pragma solidity ^0.4.0;
          bytes32 bname;
          string name;
          string suffix;
+         bool isValue;
 
      }
 
      mapping(bytes32 => Record) public Records;
-     mapping(bytes32 => bytes32) internal record_index;
+     bytes32[] internal Names;
+
      mapping(bytes32 => uint) internal suffix_level; // 1: onlyOwner, >1 userable
      string[] public Suffixs;
+
+     mapping(address => bytes32) public Address2Name;
      uint256 public fee = 1;
 
      event Transfer(address _from, address _to, string _name);
@@ -94,7 +98,7 @@ pragma solidity ^0.4.0;
      }
 
      function getRecord(bytes32 _name) public returns(address _addr, string _suffix) {
-         require(record_index[_name].length > 0, 'this name not used');
+         require(Records[_name].isValue, 'this name not used');
          Record record = Records[_name];
          _addr = record.addr;
          _suffix = record.suffix;
@@ -106,35 +110,32 @@ pragma solidity ^0.4.0;
      function setName(bytes32 _name, bytes32 _suffix) payable public {
          require(msg.value >= fee, 'must pay some value from bind name');
          require(suffix_level[_suffix] > 0, 'no such suffix');
-
-         if(record_index[_name].length > 0){
-             require(record.addr == msg.sender, 'no Permission Change the record');
-         }
+         require(!Records[_name].isValue, 'this name allready used');
          if(suffix_level[_suffix] == 1){
              require(msg.sender == owner, 'this suffix only owner used');
          }
-         Record record = Records[_name];
 
-         string oldName = record.name;
          string memory name = bytes32ToString(_name);
          string memory suffix = bytes32ToString(_suffix);
-         record.name = name;
-         record.suffix = suffix;
-         record.content = '';
-         record.addr = msg.sender;
+         Record memory record = Record(msg.sender,'',_name,name,suffix,true);
 
-         record_index[_name] = _suffix;
-         if(record.bname.length > 0){
-             delete record_index[record.bname];
+         Names.push(_name);
+         Records[_name] = record;
+
+         string memory oldName = 'no name';
+         if (Address2Name[msg.sender].length > 0){
+             bytes32 oldbname = Address2Name[msg.sender];
+             oldName = bytes32ToString(oldbname);
+             delete Records[oldbname];
          }
-         record.bname = _name;
+         Address2Name[msg.sender] = _name;
          ChangeName(msg.sender, oldName, name);
 
      }
 
      //user can transfer his name to other
      function transferName(bytes32 _name, address _addr) public {
-         require(record_index[_name].length > 0);
+         require(Records[_name].isValue);
          Record record = Records[_name];
          require(record.addr == msg.sender, 'no Permission Change the record');
 
