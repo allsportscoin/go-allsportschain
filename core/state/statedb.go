@@ -197,10 +197,10 @@ func (self *StateDB) GetBalance(addr common.Address) *big.Int {
 }
 
 // Retrieve the balance from the given address or 0 if object not found
-func (self *StateDB) GetCalledCnt(addr common.Address) *big.Int {
+func (self *StateDB) GetCalledCount(addr common.Address) *big.Int {
 	stateObject := self.getStateObject(addr)
 	if stateObject != nil {
-		return stateObject.CalledCnt()
+		return stateObject.CalledCount()
 	}
 	return common.Big0
 }
@@ -282,10 +282,10 @@ func (self *StateDB) HasSuicided(addr common.Address) bool {
  */
 
 // AddCalledCnt adds amount to the account associated with addr.
-func (self *StateDB) AddCalledCnt(addr common.Address, amount *big.Int) {
+func (self *StateDB) AddCalledCount(addr common.Address, amount *big.Int) {
 	stateObject := self.GetOrNewStateObject(addr)
 	if stateObject != nil {
-		stateObject.AddCalledCnt(amount)
+		stateObject.AddCalledCount(amount)
 	}
 }
 

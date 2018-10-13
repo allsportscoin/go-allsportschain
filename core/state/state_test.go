@@ -43,7 +43,7 @@ func (s *StateSuite) TestDump(c *checker.C) {
 	obj2 := s.state.GetOrNewStateObject(toAddr([]byte{0x01, 0x02}))
 	obj2.SetCode(crypto.Keccak256Hash([]byte{3, 3, 3, 3, 3, 3, 3}), []byte{3, 3, 3, 3, 3, 3, 3})
 	obj3 := s.state.GetOrNewStateObject(toAddr([]byte{0x02}))
-	obj3.SetBalance(big.NewInt(44))
+	obj3.SetCalledCount(big.NewInt(1))
 
 	// write some of them to the trie
 	s.state.updateStateObject(obj1)
@@ -57,6 +57,7 @@ func (s *StateSuite) TestDump(c *checker.C) {
     "accounts": {
         "0000000000000000000000000000000000000001": {
             "balance": "22",
+			"calledCount":"0",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
@@ -65,6 +66,7 @@ func (s *StateSuite) TestDump(c *checker.C) {
         },
         "0000000000000000000000000000000000000002": {
             "balance": "44",
+			"calledCount":"0",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
@@ -73,6 +75,7 @@ func (s *StateSuite) TestDump(c *checker.C) {
         },
         "0000000000000000000000000000000000000102": {
             "balance": "0",
+			"calledCount":"1",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "87874902497a5bb968da31a2998d8f22e949d1ef6214bcdedd8bae24cca4b9e3",
@@ -149,6 +152,7 @@ func TestSnapshot2(t *testing.T) {
 	so0 := state.getStateObject(stateobjaddr0)
 	so0.SetBalance(big.NewInt(42))
 	so0.SetNonce(43)
+	so0.SetCalledCount(big.NewInt(1))
 	so0.SetCode(crypto.Keccak256Hash([]byte{'c', 'a', 'f', 'e'}), []byte{'c', 'a', 'f', 'e'})
 	so0.suicided = false
 	so0.deleted = false
@@ -161,6 +165,7 @@ func TestSnapshot2(t *testing.T) {
 	so1 := state.getStateObject(stateobjaddr1)
 	so1.SetBalance(big.NewInt(52))
 	so1.SetNonce(53)
+	so1.SetCalledCount(big.NewInt(1))
 	so1.SetCode(crypto.Keccak256Hash([]byte{'c', 'a', 'f', 'e', '2'}), []byte{'c', 'a', 'f', 'e', '2'})
 	so1.suicided = true
 	so1.deleted = true
@@ -207,7 +212,9 @@ func compareStateObjects(so0, so1 *stateObject, t *testing.T) {
 	if !bytes.Equal(so0.code, so1.code) {
 		t.Fatalf("Code mismatch: have %v, want %v", so0.code, so1.code)
 	}
-
+	if so0.CalledCount().Cmp(so1.CalledCount()) != 0 {
+		t.Fatalf("CalledCount mismatch: have %v, want %v", so0.CalledCount(), so1.CalledCount())
+	}
 	if len(so1.cachedStorage) != len(so0.cachedStorage) {
 		t.Errorf("Storage size mismatch: have %d, want %d", len(so1.cachedStorage), len(so0.cachedStorage))
 	}

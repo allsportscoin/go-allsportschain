@@ -99,6 +99,10 @@ type (
 	}
 
 	// Changes to individual accounts.
+	calledCountChange struct {
+		account *common.Address
+		prev    *big.Int
+	}
 	balanceChange struct {
 		account *common.Address
 		prev    *big.Int
@@ -168,6 +172,14 @@ func (ch touchChange) revert(s *StateDB) {
 }
 
 func (ch touchChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch calledCountChange) revert(s *StateDB) {
+	s.getStateObject(*ch.account).setCalledCount(ch.prev)
+}
+
+func (ch calledCountChange) dirtied() *common.Address {
 	return ch.account
 }
 
