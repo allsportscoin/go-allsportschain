@@ -438,6 +438,12 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 	if err != nil {
 		return nil, err
 	}
+
+	//if received a new block, drop this new mined block
+	//select {
+	//case <-stop:
+	//	return nil, nil
+	//}
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
 	return block.WithSeal(header), nil
 }
