@@ -249,7 +249,7 @@ func TestEpochContextKickoutValidator(t *testing.T) {
 
 func setTestMintCnt(dposContext *types.DposContext, epoch int64, validator common.Address, count int64) {
 	for i := int64(0); i < count; i++ {
-		updateMintCnt(epoch*epochInterval, epoch*epochInterval+blockInterval, validator, dposContext)
+		dposContext.UpdateMintCnt(epoch*epochInterval, epoch*epochInterval+blockInterval, validator, epochInterval)
 	}
 }
 
