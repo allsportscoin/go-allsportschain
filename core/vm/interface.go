@@ -27,8 +27,8 @@ import (
 type StateDB interface {
 	CreateAccount(common.Address)
 
-	AddCalledCnt(common.Address, *big.Int)
-	GetCalledCnt(common.Address) *big.Int
+	AddCalledCount(common.Address, *big.Int)
+	GetCalledCount(common.Address) *big.Int
 
 	SubBalance(common.Address, *big.Int)
 	AddBalance(common.Address, *big.Int)
