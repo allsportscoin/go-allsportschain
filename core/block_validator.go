@@ -115,10 +115,10 @@ func (v *BlockValidator) ValidateDposState(block *types.Block) error {
 // This is miner strategy, not consensus protocol.
 func CalcGasLimit(parent *types.Block) uint64 {
 	// contrib = (parentGasUsed * 3 / 2) / 1024
-	contrib := (parent.GasUsed() + parent.GasUsed()/2) / params.GasLimitBoundDivisor
+	//contrib := (parent.GasUsed() + parent.GasUsed()/2) / params.GasLimitBoundDivisor
 
 	// decay = parentGasLimit / 1024 -1
-	decay := parent.GasLimit()/params.GasLimitBoundDivisor - 1
+	//decay := parent.GasLimit()/params.GasLimitBoundDivisor - 1
 
 	/*
 		strategy: gasLimit of block-to-mine is set based on parent's
@@ -127,7 +127,9 @@ func CalcGasLimit(parent *types.Block) uint64 {
 		at that usage) the amount increased/decreased depends on how far away
 		from parentGasLimit * (2/3) parentGasUsed is.
 	*/
-	limit := parent.GasLimit() - decay + contrib
+	//limit := parent.GasLimit() - decay + contrib
+	limit := parent.GasLimit()
+	/*
 	if limit < params.MinGasLimit {
 		limit = params.MinGasLimit
 	}
@@ -139,5 +141,6 @@ func CalcGasLimit(parent *types.Block) uint64 {
 			limit = params.TargetGasLimit
 		}
 	}
+	*/
 	return limit
 }
