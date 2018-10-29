@@ -429,11 +429,8 @@ func (s *stateSync) process(req *stateReq) error {
 
 	// Iterate over all the delivered data and inject one-by-one into the trie
 	progress := false
-	log.Info(fmt.Sprintf("ltf_response =  %v \n", req.response))
 	for _, blob := range req.response {
-		log.Info(fmt.Sprintf("ltf_blob =  %v \n", blob))
 		prog, hash, err := s.processNodeData(blob)
-		log.Info(fmt.Sprintf("ltf_prog, hash, err =  %v %v %v\n", prog, hash.String(), err))
 		switch err {
 		case nil:
 			s.numUncommitted++

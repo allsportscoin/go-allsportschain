@@ -35,7 +35,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/log"
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/rlp"
-)
+	)
 
 //go:generate gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
 //go:generate gencodec -type GenesisAccount -field-override genesisAccountMarshaling -out gen_genesis_account.go
@@ -396,7 +396,9 @@ func initGenesisDposContext(g *Genesis, db socdb.Database) *types.DposContext {
 		for _, validator := range g.Config.Dpos.Validators {
 			dc.DelegateTrie().TryUpdate(append(validator.Bytes(), validator.Bytes()...), validator.Bytes())
 			dc.CandidateTrie().TryUpdate(validator.Bytes(), validator.Bytes())
+			dc.VoteTrie().TryUpdate(validator.Bytes(), validator.Bytes())
 		}
 	}
+
 	return dc
 }

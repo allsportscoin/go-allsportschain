@@ -3855,6 +3855,27 @@ var outputBlockFormatter = function(block) {
 };
 
 /**
+    * Formats the output of candidateVote to its proper values
+    *
+    * @method outputCandidateVoteFormatter
+    * @param {Object} candidateVote
+    * @returns {Object}
+*/
+var outputCandidateVoteFormatter = function(candidateVote) {
+
+    // transform to number
+    candidateVote.totalVoteCount = utils.toBigNumber(candidateVote.totalVoteCount);
+    //candidateVote.candidatesList = candidateVote.candidatesList;
+    if (utils.isArray(candidateVote.voteCountList)) {
+        candidateVote.voteCountList.forEach(function(item){
+            return utils.toBigNumber(item);
+        });
+    }
+
+    return candidateVote;
+};
+
+/**
  * Formats the output of a log
  *
  * @method outputLogFormatter
@@ -3971,6 +3992,7 @@ module.exports = {
     outputTransactionFormatter: outputTransactionFormatter,
     outputTransactionReceiptFormatter: outputTransactionReceiptFormatter,
     outputBlockFormatter: outputBlockFormatter,
+    outputCandidateVoteFormatter: outputCandidateVoteFormatter,
     outputLogFormatter: outputLogFormatter,
     outputPostFormatter: outputPostFormatter,
     outputSyncingFormatter: outputSyncingFormatter

@@ -303,7 +303,7 @@ func TestEpochContextTryElect(t *testing.T) {
 	}
 	assert.NotEqual(t, oldHash, dposContext.EpochTrie().Hash())
 
-	// genesisEpoch != parentEpoch and have none mintCnt do not kickout
+	// genesisEpoch != parentEpoch  and have none mintCnt do not kickout
 	genesis = &types.Header{
 		Time: big.NewInt(-epochInterval),
 	}
@@ -320,6 +320,7 @@ func TestEpochContextTryElect(t *testing.T) {
 	for _, validator := range result {
 		assert.True(t, strings.Contains(string(validator[:]), "addr"))
 	}
+
 	assert.NotEqual(t, oldHash, dposContext.EpochTrie().Hash())
 
 	// genesisEpoch != parentEpoch kickout

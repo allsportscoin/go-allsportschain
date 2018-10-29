@@ -37,10 +37,9 @@ func (ec *EpochContext) countVotes() (votes map[common.Address]*big.Int, err err
 	for existCandidate {
 		candidate := iterCandidate.Value
 		candidateAddr := common.BytesToAddress(candidate)
-		//delegateIterator := trie.NewIterator(delegateTrie.PrefixIterator(candidate))
 		delegateIterator := trie.NewIterator(delegateTrie.NodeIterator(candidate))
 
-		existDelegator := delegateIterator.Next()
+		existDelegator := delegateIterator.NextPrefix(candidate)
 		if !existDelegator {
 			votes[candidateAddr] = new(big.Int)
 			existCandidate = iterCandidate.Next()
@@ -56,7 +55,7 @@ func (ec *EpochContext) countVotes() (votes map[common.Address]*big.Int, err err
 			weight := statedb.GetBalance(delegatorAddr)
 			score.Add(score, weight)
 			votes[candidateAddr] = score
-			existDelegator = delegateIterator.Next()
+			existDelegator = delegateIterator.NextPrefix(candidate)
 		}
 		existCandidate = iterCandidate.Next()
 	}
@@ -81,7 +80,7 @@ func (ec *EpochContext) kickoutValidator(epoch int64) error {
 		epochDuration = ec.TimeStamp - timeOfFirstBlock
 	}
 
-	needKickoutValidators := sortableAddresses{}
+	needKickoutValidators := common.SortableAddresses{}
 	for _, validator := range validators {
 		key := make([]byte, 8)
 		binary.BigEndian.PutUint64(key, uint64(epoch))
@@ -92,7 +91,7 @@ func (ec *EpochContext) kickoutValidator(epoch int64) error {
 		}
 		if cnt < epochDuration/blockInterval/ maxValidatorSize /2 {
 			// not active validators need kickout
-			needKickoutValidators = append(needKickoutValidators, &sortableAddress{validator, big.NewInt(cnt)})
+			needKickoutValidators = append(needKickoutValidators, &common.SortableAddress{Address:validator, Weight:big.NewInt(cnt)})
 		}
 	}
 	// no validators need kickout
@@ -118,12 +117,12 @@ func (ec *EpochContext) kickoutValidator(epoch int64) error {
 			return nil
 		}
 
-		if err := ec.DposContext.KickoutCandidate(validator.address); err != nil {
+		if err := ec.DposContext.KickoutCandidate(validator.Address); err != nil {
 			return err
 		}
 		// if kickout success, candidateCount minus 1
 		candidateCount--
-		log.Info("Kickout candidate", "prevEpochID", epoch, "candidate", validator.address.String(), "mintCnt", validator.weight.String())
+		log.Info("Kickout candidate", "prevEpochID", epoch, "candidate", validator.Address.String(), "mintCnt", validator.Weight.String())
 	}
 	return nil
 }
@@ -157,16 +156,16 @@ func (ec *EpochContext) tryElect(genesis, parent *types.Header) error {
 	if prevEpochIsGenesis && prevEpoch < currentEpoch {
 		prevEpoch = currentEpoch - 1
 	}
-
 	prevEpochBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(prevEpochBytes, uint64(prevEpoch))
 	//iter := trie.NewIterator(ec.DposContext.MintCntTrie().PrefixIterator(prevEpochBytes))
 	iter := trie.NewIterator(ec.DposContext.MintCntTrie().NodeIterator(prevEpochBytes))
-
 	for i := prevEpoch; i < currentEpoch; i++ {
+		iBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(iBytes, uint64(i))
 		// if prevEpoch is not genesis, kickout not active candidate
-		if !prevEpochIsGenesis && iter.Next() {
-			if err := ec.kickoutValidator(prevEpoch); err != nil {
+		if !prevEpochIsGenesis && iter.NextPrefix(iBytes) {
+			if err := ec.kickoutValidator(i); err != nil {
 				return err
 			}
 		}
@@ -174,9 +173,9 @@ func (ec *EpochContext) tryElect(genesis, parent *types.Header) error {
 		if err != nil {
 			return err
 		}
-		candidates := sortableAddresses{}
+		candidates := common.SortableAddresses{}
 		for candidate, cnt := range votes {
-			candidates = append(candidates, &sortableAddress{candidate, cnt})
+			candidates = append(candidates, &common.SortableAddress{Address:candidate, Weight:cnt})
 		}
 		if len(candidates) < safeSize {
 			return errors.New("too few candidates")
@@ -195,7 +194,7 @@ func (ec *EpochContext) tryElect(genesis, parent *types.Header) error {
 		}
 		sortedValidators := make([]common.Address, 0)
 		for _, candidate := range candidates {
-			sortedValidators = append(sortedValidators, candidate.address)
+			sortedValidators = append(sortedValidators, candidate.Address)
 		}
 
 		epochTrie, _ := types.NewEpochTrie(common.Hash{}, ec.DposContext.DB())
@@ -206,20 +205,3 @@ func (ec *EpochContext) tryElect(genesis, parent *types.Header) error {
 	return nil
 }
 
-type sortableAddress struct {
-	address common.Address
-	weight  *big.Int
-}
-type sortableAddresses []*sortableAddress
-
-func (p sortableAddresses) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
-func (p sortableAddresses) Len() int      { return len(p) }
-func (p sortableAddresses) Less(i, j int) bool {
-	if p[i].weight.Cmp(p[j].weight) < 0 {
-		return false
-	} else if p[i].weight.Cmp(p[j].weight) > 0 {
-		return true
-	} else {
-		return p[i].address.String() < p[j].address.String()
-	}
-}

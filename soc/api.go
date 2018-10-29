@@ -39,6 +39,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/rlp"
 	"github.com/allsportschain/go-allsportschain/rpc"
 	"github.com/allsportschain/go-allsportschain/trie"
+	"sort"
 )
 
 // PublicEthereumAPI
@@ -66,6 +67,113 @@ func (api *PublicAllsportschainAPI) Coinbase() (common.Address, error) {
 // Hashrate returns the POW hashrate
 func (api *PublicAllsportschainAPI) Hashrate() hexutil.Uint64 {
 	return hexutil.Uint64(api.e.Miner().HashRate())
+}
+
+func (api *PublicAllsportschainAPI) GetCandidatesAndVoteCountTopN(ctx context.Context, topN hexutil.Uint64, blockNr rpc.BlockNumber) ( map[string]interface{}, error) {
+
+	candidatesList := []common.Address{}
+	voteCountList := []*big.Int{}
+	totalVoteCount := big.NewInt(0)
+	fields := map[string]interface{}{
+		"candidatesList": candidatesList,
+		"voteCountList": voteCountList,
+		"totalVoteCount":totalVoteCount,
+	}
+	votes := map[common.Address]*big.Int{}
+	retCandidates := common.SortableAddresses{}
+
+
+	header := api.e.blockchain.CurrentHeader()
+	delegateTrie, err := types.NewDelegateTrie(header.DposContext.DelegateHash, api.e.chainDb)
+	if err != nil {
+		return fields, err
+	}
+	candidateTrie, err := types.NewCandidateTrie(header.DposContext.CandidateHash, api.e.chainDb)
+	if err != nil {
+		return fields, err
+	}
+	statedb, _, err := api.e.APIBackend.StateAndHeaderByNumber(ctx, blockNr)
+	if statedb == nil || err != nil {
+		return fields, err
+	}
+
+	iterCandidate := trie.NewIterator(candidateTrie.NodeIterator(nil))
+	existCandidate := iterCandidate.Next()
+	if !existCandidate {
+		return fields, nil
+	}
+	for existCandidate {
+		candidate := iterCandidate.Value
+		candidateAddr := common.BytesToAddress(candidate)
+		delegateIterator := trie.NewIterator(delegateTrie.NodeIterator(candidate))
+
+		existDelegator := delegateIterator.NextPrefix(candidate)
+		if !existDelegator {
+			votes[candidateAddr] = new(big.Int)
+			existCandidate = iterCandidate.Next()
+			continue
+		}
+		for existDelegator {
+			delegator := delegateIterator.Value
+			score, ok := votes[candidateAddr]
+			if !ok {
+				score = new(big.Int)
+			}
+			delegatorAddr := common.BytesToAddress(delegator)
+			weight := statedb.GetBalance(delegatorAddr)
+			score.Add(score, weight)
+			votes[candidateAddr] = score
+			existDelegator = delegateIterator.NextPrefix(candidate)
+		}
+		existCandidate = iterCandidate.Next()
+		totalVoteCount.Add(totalVoteCount,votes[candidateAddr])
+	}
+
+	for candidate, cnt := range votes {
+		retCandidates = append(retCandidates, &common.SortableAddress{ Address:candidate, Weight:cnt})
+	}
+
+	sort.Sort(retCandidates)
+	if topN > 0 && hexutil.Uint64(len(retCandidates)) > topN {
+		retCandidates = retCandidates[:topN]
+	}
+	for _, sortableAddress := range retCandidates{
+		candidatesList = append(candidatesList,sortableAddress.Address)
+		voteCountList = append(voteCountList,sortableAddress.Weight)
+	}
+
+	fields["candidatesList"] = candidatesList
+	fields["voteCountList"] = voteCountList
+	fields["totalVoteCount"] = totalVoteCount
+	return fields,nil
+}
+
+func (api *PublicAllsportschainAPI) GetAddrVoteCount(ctx context.Context, address common.Address, blockNr rpc.BlockNumber) ( *big.Int, error) {
+	totalVoteCount := big.NewInt(0)
+
+	header := api.e.blockchain.CurrentHeader()
+
+	delegateTrie, err := types.NewDelegateTrie(header.DposContext.DelegateHash, api.e.chainDb)
+	if err != nil {
+		return totalVoteCount, err
+	}
+	statedb, _, err := api.e.APIBackend.StateAndHeaderByNumber(ctx, blockNr)
+	if statedb == nil || err != nil {
+		return totalVoteCount, err
+	}
+
+	delegateIterator := trie.NewIterator(delegateTrie.NodeIterator(address.Bytes()))
+	existDelegator := delegateIterator.NextPrefix(address.Bytes())
+
+	for existDelegator {
+		delegator := delegateIterator.Value
+		delegatorAddr := common.BytesToAddress(delegator)
+		count := statedb.GetBalance(delegatorAddr)
+		totalVoteCount.Add(totalVoteCount, count)
+		existDelegator = delegateIterator.NextPrefix(address.Bytes())
+	}
+
+	return totalVoteCount, nil
 }
 
 // PublicMinerAPI provides an API to control the miner.

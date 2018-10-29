@@ -340,3 +340,21 @@ func (ma *MixedcaseAddress) ValidChecksum() bool {
 func (ma *MixedcaseAddress) Original() string {
 	return ma.original
 }
+
+type SortableAddress struct {
+	Address Address
+	Weight  *big.Int
+}
+type SortableAddresses []*SortableAddress
+
+func (p SortableAddresses) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p SortableAddresses) Len() int      { return len(p) }
+func (p SortableAddresses) Less(i, j int) bool {
+	if p[i].Weight.Cmp(p[j].Weight) < 0 {
+		return false
+	} else if p[i].Weight.Cmp(p[j].Weight) > 0 {
+		return true
+	} else {
+		return p[i].Address.String() < p[j].Address.String()
+	}
+}

@@ -26,8 +26,7 @@ import (
 	"fmt"
 	"bytes"
 	"github.com/allsportschain/go-allsportschain/rlp"
-	"github.com/allsportschain/go-allsportschain/log"
-)
+		)
 
 // API is a user facing RPC API to allow controlling the delegate and voting
 // mechanisms of the delegated-proof-of-stake
@@ -100,10 +99,8 @@ func (api *API) GetConfirmedBlockNumber() (*big.Int, error) {
 func (api * API) GetCandidates(number *rpc.BlockNumber) ([]common.Address, error) {
 	var header *types.Header
 	if number == nil || *number == rpc.LatestBlockNumber {
-		log.Error("latestedbalocknumber")
 		header = api.chain.CurrentHeader()
 	} else {
-		log.Error("has number")
 		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
 	}
 	if header == nil {
@@ -124,23 +121,58 @@ func (api * API) GetCandidates(number *rpc.BlockNumber) ([]common.Address, error
 	return candidates, nil
 }
 
-//api for get candidate vote addr form vote trie
-func (api * API) GetAddrVote(candidate common.Address) ([]common.Address, error) {
+//api for get Delegate addr form delegateTrie
+func (api * API) GetDelegatesByCandidate(candidate common.Address) ([]common.Address, error) {
 	header := api.chain.CurrentHeader()
-	voteTrie, err := types.NewVoteTrie(header.DposContext.VoteHash, api.dpos.db)
+	delegateTrie, err := types.NewDelegateTrie(header.DposContext.DelegateHash, api.dpos.db)
 
 	if err != nil {
 		return []common.Address{}, err
 	}
 
 	delegateList := make([]common.Address, 0)
-	voteIter := trie.NewIterator(voteTrie.NodeIterator(nil))
-	for voteIter.Next() {
-		dele := voteIter.Key
-		cand := voteIter.Value
-		if bytes.Equal(cand,candidate.Bytes()) {
-			delegateList = append(delegateList,common.BytesToAddress(dele))
-		}
+	delegateIterator := trie.NewIterator(delegateTrie.NodeIterator(candidate.Bytes()))
+	for delegateIterator.NextPrefix(candidate.Bytes()) {
+		delegate := delegateIterator.Value
+		delegateList = append(delegateList,common.BytesToAddress(delegate))
 	}
 	return delegateList, nil
+}
+
+//api for get candidate addr form vote trie
+func (api * API) GetCandidatesByDelegate(delegate common.Address) ([]common.Address, error) {
+	header := api.chain.CurrentHeader()
+	voteTrie, err := types.NewVoteTrie(header.DposContext.VoteHash, api.dpos.db)
+	if err != nil {
+		return []common.Address{}, err
+	}
+
+	candidate, err := voteTrie.TryGet(delegate.Bytes())
+	if err != nil {
+		return []common.Address{}, err
+	}
+	candidateList := make([]common.Address, 0)
+	if len(candidate) != 0 {
+		candidateList = append(candidateList, common.BytesToAddress(candidate))
+	}
+	return candidateList, nil
+}
+
+func (api * API) GetAddrIsCandidate(addr common.Address) (bool, error) {
+	header := api.chain.CurrentHeader()
+	candidateTrie, err := types.NewCandidateTrie(header.DposContext.CandidateHash, api.dpos.db)
+	if err != nil {
+		return false, err
+	}
+
+	candidate, err := candidateTrie.TryGet(addr.Bytes())
+	if err != nil {
+		return false, err
+	}
+
+	if bytes.Equal(candidate,addr.Bytes()) {
+		return true, nil
+	}else{
+		return false, nil
+	}
 }

@@ -221,7 +221,7 @@ func (d *DposContext) KickoutCandidate(candidateAddr common.Address) error {
 		}
 	}
 	iter := trie.NewIterator(d.delegateTrie.NodeIterator(candidate))
-	for iter.Next() {
+	for iter.NextPrefix(candidate) {
 		delegator := iter.Value
 		key := append(candidate, delegator...)
 		err = d.delegateTrie.TryDelete(key)
@@ -392,16 +392,13 @@ func  (dc *DposContext) UpdateMintCnt(parentBlockTime, currentBlockTime int64, v
 	newEpoch := currentBlockTime / epochInterval
 	// still during the currentEpochID
 	if currentEpoch == newEpoch {
-		iter := trie.NewIterator(currentMintCntTrie.NodeIterator(currentEpochBytes))
 
 		// when current is not genesis, read last count from the MintCntTrie
-		if iter.Next() {
-			cntBytes := currentMintCntTrie.Get(append(currentEpochBytes, validator.Bytes()...))
+		cntBytes := currentMintCntTrie.Get(append(currentEpochBytes, validator.Bytes()...))
 
-			// not the first time to mint
-			if cntBytes != nil {
-				cnt = int64(binary.BigEndian.Uint64(cntBytes)) + 1
-			}
+		// not the first time to mint
+		if cntBytes != nil {
+			cnt = int64(binary.BigEndian.Uint64(cntBytes)) + 1
 		}
 	}
 
