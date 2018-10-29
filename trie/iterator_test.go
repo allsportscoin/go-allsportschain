@@ -193,6 +193,51 @@ func checkIteratorOrder(want []kvs, it *Iterator) error {
 	return nil
 }
 
+func TestIteratorSeek2(t *testing.T) {
+	trie := newEmpty()
+	for _, val := range testdata1 {
+		trie.Update([]byte(val.k), []byte(val.v))
+	}
+
+	// Seek to the middle.
+	prefix := []byte("foo")
+	it := NewIterator(trie.NodeIterator(prefix))
+	if err := checkIteratorOrder2(testdata1[5:], it, prefix); err != nil {
+		t.Fatal(err)
+	}
+
+	// Seek to a non-existent key.
+	prefix = []byte("bar")
+	it = NewIterator(trie.NodeIterator(prefix))
+	if err := checkIteratorOrder2(testdata1[0:4], it, prefix); err != nil {
+		t.Fatal(err)
+	}
+
+	//// Seek beyond the end.
+	prefix = []byte("fa")
+	it = NewIterator(trie.NodeIterator(prefix))
+	if err := checkIteratorOrder2(testdata1[4:5], it, prefix); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func checkIteratorOrder2(want []kvs, it *Iterator, prefix []byte) error {
+	for it.NextPrefix(prefix) {
+		//fmt.Printf("%s\r\n",it.Key);
+		if len(want) == 0 {
+			return fmt.Errorf("didn't expect any more values, got key %q", it.Key)
+		}
+		if !bytes.Equal(it.Key, []byte(want[0].k)) {
+			return fmt.Errorf("wrong key: got %q, want %q", it.Key, want[0].k)
+		}
+		want = want[1:]
+	}
+	if len(want) > 0 {
+		return fmt.Errorf("iterator ended early, want key %q", want[0])
+	}
+	return nil
+}
+
 func TestDifferenceIterator(t *testing.T) {
 	triea := newEmpty()
 	for _, val := range testdata1 {

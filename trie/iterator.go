@@ -56,6 +56,23 @@ func (it *Iterator) Next() bool {
 	return false
 }
 
+func (it *Iterator) NextPrefix(prefix []byte) bool {
+	for it.nodeIt.Next(true) {
+		if it.nodeIt.Leaf() {
+			it.Key = it.nodeIt.LeafKey()
+			if (!bytes.Equal(it.Key[0:len(prefix)], prefix)) {
+				return false;
+			}
+			it.Value = it.nodeIt.LeafBlob()
+			return true
+		}
+	}
+	it.Key = nil
+	it.Value = nil
+	it.Err = it.nodeIt.Error()
+	return false
+}
+
 // Prove generates the Merkle proof for the leaf node the iterator is currently
 // positioned on.
 func (it *Iterator) Prove() [][]byte {
@@ -113,10 +130,10 @@ type nodeIteratorState struct {
 }
 
 type nodeIterator struct {
-	trie  *Trie                // Trie being iterated
-	stack []*nodeIteratorState // Hierarchy of trie nodes persisting the iteration state
-	path  []byte               // Path to the current node
-	err   error                // Failure set in case of an internal error in the iterator
+	trie  	*Trie                // Trie being iterated
+	stack 	[]*nodeIteratorState // Hierarchy of trie nodes persisting the iteration state
+	path  	[]byte               // Path to the current node
+	err   	error                // Failure set in case of an internal error in the iterator
 }
 
 // errIteratorEnd is stored in nodeIterator.err when iteration is done.
