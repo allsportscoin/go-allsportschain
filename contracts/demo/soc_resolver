@@ -1,0 +1,101 @@
+pragma solidity ^0.4.16;
+
+contract owned {
+    address public owner;
+    constructor() public {
+        owner = msg.sender;
+    }
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
+}
+
+contract restriction {
+    modifier lengthLimit(string name) {
+        bytes memory strBytes = bytes(name);
+        require(strBytes.length>6, "domain length too short");
+        _;
+    }
+}
+
+contract SocResolver is owned, restriction {
+    string public Suffix;
+
+    struct Alias {
+        string name;
+        address addr;
+        bool isUsed;
+    }
+
+    mapping(string=>Alias) Aliases;
+
+    mapping(address=>string) AddressToAlias;
+    string[] AliasNames;
+
+    event SetAlias(string aliasName, address aliasAddr);
+
+    constructor(string _suffix) public {
+        Suffix = _suffix;
+    }
+
+    function setVipAlias(string _aliasName, address _aliasAddr) public onlyOwner {
+        require(!Aliases[_aliasName].isUsed, "alias already exists");
+        require(_aliasAddr != address(0x0), "empty address not allowed");
+        require(bytes(AddressToAlias[_aliasAddr]).length==0, "address already bind to another alias");
+
+        AliasNames.push(_aliasName);
+        AddressToAlias[_aliasAddr] = _aliasName;
+        Aliases[_aliasName] = Alias(_aliasName, _aliasAddr, true);
+
+        emit SetAlias(_aliasName, _aliasAddr);
+    }
+
+    function setAlias(string _aliasName, address _aliasAddr) public payable lengthLimit(_aliasName) {
+        require(!Aliases[_aliasName].isUsed, "alias already exists");
+        if(_aliasAddr == address(0x0)) {
+            _aliasAddr = msg.sender;
+        }
+        require(bytes(AddressToAlias[_aliasAddr]).length==0, "address already bind to another alias");
+
+        AliasNames.push(_aliasName);
+        AddressToAlias[_aliasAddr] = _aliasName;
+        Aliases[_aliasName] = Alias(_aliasName, _aliasAddr, true);
+
+        emit SetAlias(_aliasName, _aliasAddr);
+    }
+
+    function getAddrByAlias(string _aliasName) public view returns(address) {
+        require(Aliases[_aliasName].isUsed, "alias name not exists");
+        Alias memory _alias = Aliases[_aliasName];
+        return _alias.addr;
+    }
+
+    function getAliasByAddr(address _addr) public view returns(string) {
+        require(bytes(AddressToAlias[_addr]).length>0, "alias of _addr not exists");
+        Alias memory _alias = Aliases[AddressToAlias[_addr]];
+        return _alias.name;
+    }
+
+    function supportSNSInterface(bytes4 _interfaceId) public pure returns(bool) {
+        return this.getAddrByAlias.selector==_interfaceId ||
+            this.getAliasByAddr.selector==_interfaceId ||
+            this.setAlias.selector==_interfaceId ||
+            this.supportSNSInterface.selector==_interfaceId;
+    }
+
+    function getInterface() public pure returns(bytes4[]) {
+        bytes4[] memory res = new bytes4[](4);
+        res[0] = bytes4(keccak256("setAlias(string,address)"));
+        res[1] = bytes4(keccak256("getAddrByAlias(string)"));
+        res[2] = bytes4(keccak256("getAliasByAddr(address)"));
+        res[3] = bytes4(keccak256("supportSNSInterface(bytes4)"));
+
+        return res;
+    }
+
+    function withDraw(address addr) public onlyOwner {
+        require(addr != 0x0);
+        addr.transfer(address(this).balance);
+    }
+}

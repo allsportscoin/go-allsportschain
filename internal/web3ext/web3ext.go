@@ -72,7 +72,7 @@ web3._extend({
 			name: 'getValidators',
 			call: 'dpos_getValidators',
 			params: 1,
-			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+			inputFormatter: [web3._extend.formatters.inputDefaultBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'getConfirmedBlockNumber',
@@ -84,25 +84,57 @@ web3._extend({
 			name: 'getCandidates',
 			call: 'dpos_getCandidates',
 			params: 1,
-			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+			inputFormatter: [web3._extend.formatters.inputDefaultBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'getDelegatesByCandidate',
 			call: 'dpos_getDelegatesByCandidate',
-			params: 1,
-			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
+			params: 2,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter,web3._extend.formatters.inputDefaultBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'getCandidatesByDelegate',
 			call: 'dpos_getCandidatesByDelegate',
-			params: 1,
-			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
+			params: 2,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter,web3._extend.formatters.inputDefaultBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'getAddrIsCandidate',
 			call: 'dpos_getAddrIsCandidate',
+			params: 2,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter,web3._extend.formatters.inputDefaultBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getTotalWei',
+			call: 'dpos_getTotalWei',
 			params: 1,
-			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
+			inputFormatter: [web3._extend.formatters.inputDefaultBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getValidatorsMintCount',
+			call: 'dpos_getValidatorsMintCount',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputDefaultBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getEpochInterval',
+			call: 'dpos_getEpochInterval',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputDefaultBlockNumberFormatter]
+			outputFormatter: web3._extend.formatters.outputBigNumberFormatter
+		}),
+		new web3._extend.Method({
+			name: 'getAddrVoteCount',
+			call: 'dpos_getAddrVoteCount',
+			params: 2,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter, web3._extend.formatters.inputDefaultBlockNumberFormatter]
+		}),
+		new web3._extend.Method({
+			name: 'getCandidatesAndVoteCountTopN',
+			call: 'dpos_getCandidatesAndVoteCountTopN',
+			params: 2,
+			inputFormatter: [web3._extend.utils.fromDecimal, web3._extend.formatters.inputDefaultBlockNumberFormatter],
+			outputFormatter: web3._extend.formatters.outputCandidateVoteFormatter
 		}),
 	]
 });
@@ -476,20 +508,6 @@ web3._extend({
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, web3._extend.utils.toHex]
 		}),
-		new web3._extend.Method({
-			name: 'getAddrVoteCount',
-			call: 'soc_getAddrVoteCount',
-			params: 2,
-			inputFormatter: [web3._extend.formatters.inputAddressFormatter, web3._extend.formatters.inputDefaultBlockNumberFormatter]
-		}),
-		new web3._extend.Method({
-			name: 'getCandidatesAndVoteCountTopN',
-			call: 'soc_getCandidatesAndVoteCountTopN',
-			params: 2,
-			inputFormatter: [web3._extend.utils.fromDecimal, web3._extend.formatters.inputDefaultBlockNumberFormatter],
-			outputFormatter: web3._extend.formatters.outputCandidateVoteFormatter
-		}),
-
 	],
 	properties: [
 		new web3._extend.Property({

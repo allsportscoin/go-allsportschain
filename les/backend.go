@@ -90,7 +90,7 @@ func New(ctx *node.ServiceContext, config *soc.Config) (*LightAllsportschain, er
 	if _, isCompat := genesisErr.(*params.ConfigCompatError); genesisErr != nil && !isCompat {
 		return nil, genesisErr
 	}
-	log.Info("Initialised chain configuration", "config", chainConfig)
+	log.Info("Initialised chain configuration", "chainConfig", chainConfig, "config", config)
 
 	peers := newPeerSet()
 	quitSync := make(chan struct{})

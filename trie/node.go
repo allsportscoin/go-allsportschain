@@ -23,8 +23,7 @@ import (
 
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/rlp"
-	"github.com/allsportschain/go-allsportschain/log"
-)
+	)
 
 var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "[17]"}
 
@@ -138,11 +137,11 @@ func decodeNode(hash, buf []byte, cachegen uint16) (node, error) {
 	switch c, _ := rlp.CountValues(elems); c {
 	case 2:
 		n, err := decodeShort(hash, elems, cachegen)
-		log.Debug("decodeShort","n",n,"err",err)
+		//log.Debug("decodeShort","n",n,"err",err)
 		return n, wrapError(err, "short")
 	case 17:
 		n, err := decodeFull(hash, elems, cachegen)
-		log.Debug("decodeFull:","n",n,"err",err)
+		//log.Debug("decodeFull:","n",n,"err",err)
 		return n, wrapError(err, "full")
 	default:
 		return nil, fmt.Errorf("invalid number of list elements: %v", c)
@@ -162,14 +161,14 @@ func decodeShort(hash, elems []byte, cachegen uint16) (node, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid value node: %v", err)
 		}
-		log.Debug("shortNode hasTerm","key",key,"r",val,"flag",flag)
+		//log.Debug("shortNode hasTerm","key",key,"r",val,"flag",flag)
 		return &shortNode{key, append(valueNode{}, val...), flag}, nil
 	}
 	r, _, err := decodeRef(rest, cachegen)
 	if err != nil {
 		return nil, wrapError(err, "val")
 	}
-	log.Debug("shortNode","key",key,"r",r,"flag",flag)
+	//log.Debug("shortNode","key",key,"r",r,"flag",flag)
 	return &shortNode{key, r, flag}, nil
 }
 

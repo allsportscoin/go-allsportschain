@@ -34,6 +34,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/log"
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/hashicorp/golang-lru"
+	"github.com/allsportschain/go-allsportschain/core/state"
 )
 
 const (
@@ -497,4 +498,7 @@ func (hc *HeaderChain) Engine() consensus.Engine { return hc.engine }
 // a header chain does not have blocks available for retrieval.
 func (hc *HeaderChain) GetBlock(hash common.Hash, number uint64) *types.Block {
 	return nil
+}
+func (hc *HeaderChain) StateAt(root common.Hash) (*state.StateDB, error){
+	return nil,errors.New("implement me")
 }
