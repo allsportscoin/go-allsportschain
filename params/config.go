@@ -26,21 +26,21 @@ import (
 // Genesis hashes to enforce below configs on.
 var (
 	MainnetGenesisHash = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3")
-	TestnetGenesisHash = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d")
+	TestnetGenesisHash = common.HexToHash("0x36d201359c7474ec92c0db86d497d692a9f71e123d733e9a13286ce34bf5d0ec")
 )
 
 var (
 	// MainnetChainConfig is the chain parameters to run a node on the main network.
 	MainnetChainConfig = &ChainConfig{
 		ChainID:             big.NewInt(1),
-		HomesteadBlock:      big.NewInt(1150000),
-		DAOForkBlock:        big.NewInt(1920000),
+		HomesteadBlock:      big.NewInt(0),
+		DAOForkBlock:        big.NewInt(0),
 		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(2463000),
-		EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:         big.NewInt(2675000),
-		EIP158Block:         big.NewInt(2675000),
-		ByzantiumBlock:      big.NewInt(4370000),
+		EIP150Block:         big.NewInt(0),
+		EIP150Hash:          common.HexToHash("0x342f824144c0882cfb6730648e8f17a46617684c6444a8734748a1ca00f6d6"),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
 		ConstantinopleBlock: nil,
 		Dpos: 				&DposConfig{},
 	}
@@ -52,13 +52,21 @@ var (
 		DAOForkBlock:        nil,
 		DAOForkSupport:      true,
 		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"),
-		EIP155Block:         big.NewInt(10),
-		EIP158Block:         big.NewInt(10),
-		ByzantiumBlock:      big.NewInt(1700000),
+		EIP150Hash:          common.HexToHash("0x342f824144c0882cfb6730648e8f17a46617684c6444a8734748a1ca00f6d6"),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
 		ConstantinopleBlock: nil,
-		Dpos: 				&DposConfig{},
-		//Sochash:              new(SochashConfig),
+		Dpos: 				&DposConfig{Validators: []common.Address {
+			common.HexToAddress("0x90ae4a42d524506f99249e5fc10d948c4e07f441"),
+			common.HexToAddress("0x97cf512dc01011c3e4926c80b12d55609729bc4a"),
+			common.HexToAddress("0xaaf44b8cdb34c41b17bcdb6dedd34bd5c775f9d7"),
+			common.HexToAddress("0x7e3a758190beba57902b5b08b59f15a102e53e67"),
+			common.HexToAddress("0xe72239a57f06079b1c849d90a4c606e0ff1e3cad"),
+			common.HexToAddress("0x6034094ff39f12786f8d5f45ae1ece5ec6b83064"),
+			common.HexToAddress("0x6c18f4f165572afa4068dfa3ce537c4e22575144"),
+			},
+		},
 	}
 
 	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
