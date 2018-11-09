@@ -26,7 +26,6 @@ import (
 	"unicode"
 
 	cli "gopkg.in/urfave/cli.v1"
-
 	"github.com/allsportschain/go-allsportschain/cmd/utils"
 	"github.com/allsportschain/go-allsportschain/dashboard"
 	"github.com/allsportschain/go-allsportschain/soc"

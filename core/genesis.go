@@ -35,7 +35,8 @@ import (
 	"github.com/allsportschain/go-allsportschain/log"
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/rlp"
-	)
+	"sort"
+)
 
 //go:generate gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
 //go:generate gencodec -type GenesisAccount -field-override genesisAccountMarshaling -out gen_genesis_account.go
@@ -225,14 +226,23 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 		db = socdb.NewMemDatabase()
 	}
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(db))
+
+	size := len(g.Alloc)
+	txs := make(types.TxByNonce, 0, size)
+	signer := types.MakeSigner(g.Config, big.NewInt(0))
 	for addr, account := range g.Alloc {
 		statedb.AddBalance(addr, account.Balance)
 		statedb.SetCode(addr, account.Code)
-		statedb.SetNonce(addr, account.Nonce)
+		statedb.SetNonce(addr, uint64(0))
 		for key, value := range account.Storage {
 			statedb.SetState(addr, key, value)
 		}
+		tx := types.NewTransaction(account.Nonce, addr, account.Balance,types.Normal,1, big.NewInt(1),nil)
+		tx, _ = tx.WithSignature(signer, common.Hex2Bytes("9bea4c4daac7c7c52e093e6a4c35dbbcf8856f1af7b059ba20253e70848d094f8a8fae537ce25ed8cb5af9adac3f141af69bd515bd2ba031522df09b97dd72b100"))
+		txs = append(txs, tx)
 	}
+
+	sort.Sort(txs)
 	root := statedb.IntermediateRoot(false)
 
 	// add dposcontext
@@ -261,7 +271,7 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true)
 
-	block := types.NewBlock(head, nil, nil, nil)
+	block := types.NewBlock(head, txs, nil, nil)
 	block.DposContext = dposContext
 
 	return block
@@ -286,6 +296,7 @@ func (g *Genesis) Commit(db socdb.Database) (*types.Block, error) {
 	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(db, block.Hash())
 	rawdb.WriteHeadHeaderHash(db, block.Hash())
+	rawdb.WriteTxLookupEntries(db, block)
 
 	config := g.Config
 	if config == nil {
@@ -328,11 +339,27 @@ func DefaultTestnetGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.TestnetChainConfig,
 		Nonce:      66,
-		ExtraData:  hexutil.MustDecode("0x3535353535353535353535353535353535353535353535353535353535353535"),
-		GasLimit:   16777216,
-		Difficulty: big.NewInt(1048576),
-		Alloc:      decodePrealloc(testnetAllocData),
+		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
+		GasLimit:   1342177280,
+		Difficulty: big.NewInt(131072),
+		Alloc:      defaultTestNetGennesisAlloc(),
 	}
+}
+
+func defaultTestNetGennesisAlloc() map[common.Address]GenesisAccount {
+	alloc := map[common.Address]GenesisAccount{
+		common.HexToAddress("0x90ae4a42d524506f99249e5fc10d948c4e07f441"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:0},
+		common.HexToAddress("0x97cf512dc01011c3e4926c80b12d55609729bc4a"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:1},
+		common.HexToAddress("0xaaf44b8cdb34c41b17bcdb6dedd34bd5c775f9d7"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:2},
+		common.HexToAddress("0x7e3a758190beba57902b5b08b59f15a102e53e67"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:3},
+		common.HexToAddress("0xe72239a57f06079b1c849d90a4c606e0ff1e3cad"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:4},
+		common.HexToAddress("0x6034094ff39f12786f8d5f45ae1ece5ec6b83064"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:5},
+		common.HexToAddress("0x6c18f4f165572afa4068dfa3ce537c4e22575144"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:6},
+		common.HexToAddress("0xf97e86587b04c6f7a033fb365a8413e2e1af1f3e"): {Balance: big.NewInt(1).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:7},
+
+	}
+
+	return alloc
 }
 
 // DefaultRinkebyGenesisBlock returns the Rinkeby network genesis block.
