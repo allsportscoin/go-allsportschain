@@ -26,7 +26,11 @@ import (
 	"fmt"
 	"bytes"
 	"github.com/allsportschain/go-allsportschain/rlp"
-		)
+	"github.com/allsportschain/go-allsportschain/common/hexutil"
+	"encoding/binary"
+		"sort"
+	"github.com/allsportschain/go-allsportschain/log"
+)
 
 // API is a user facing RPC API to allow controlling the delegate and voting
 // mechanisms of the delegated-proof-of-stake
@@ -37,6 +41,7 @@ type API struct {
 
 // GetValidators retrieves the list of the validators at specified block
 func (api *API) GetValidators(number *rpc.BlockNumber) ([]common.Address, error) {
+	log.Debug("number:","number",*number)
 	var header *types.Header
 	if number == nil || *number == rpc.LatestBlockNumber {
 		header = api.chain.CurrentHeader()
@@ -59,27 +64,6 @@ func (api *API) GetValidators(number *rpc.BlockNumber) ([]common.Address, error)
 		return nil, fmt.Errorf("failed to decode validators: %s", err)
 	}
 	return validators, nil
-}
-// SetValidators retrieves the list of the validators at specified block
-func (api *API) SetValidators(number *rpc.BlockNumber, validators []common.Address) error {
-	var header *types.Header
-	if number == nil || *number == rpc.LatestBlockNumber {
-		header = api.chain.CurrentHeader()
-	} else {
-		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
-	}
-	if header == nil {
-		return errUnknownBlock
-	}
-
-	epochTrie, err := types.NewEpochTrie(header.DposContext.EpochHash, api.dpos.db)
-	if err != nil {
-		return err
-	}
-	dposContext := types.DposContext{}
-	dposContext.SetEpoch(epochTrie)
-	dposContext.SetValidators(validators)
-	return nil
 }
 
 // GetConfirmedBlockNumber retrieves the latest irreversible block
@@ -122,8 +106,16 @@ func (api * API) GetCandidates(number *rpc.BlockNumber) ([]common.Address, error
 }
 
 //api for get Delegate addr form delegateTrie
-func (api * API) GetDelegatesByCandidate(candidate common.Address) ([]common.Address, error) {
-	header := api.chain.CurrentHeader()
+func (api * API) GetDelegatesByCandidate(candidate common.Address,number *rpc.BlockNumber) ([]common.Address, error) {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	if header == nil {
+		return nil, errUnknownBlock
+	}
 	delegateTrie, err := types.NewDelegateTrie(header.DposContext.DelegateHash, api.dpos.db)
 
 	if err != nil {
@@ -140,8 +132,16 @@ func (api * API) GetDelegatesByCandidate(candidate common.Address) ([]common.Add
 }
 
 //api for get candidate addr form vote trie
-func (api * API) GetCandidatesByDelegate(delegate common.Address) ([]common.Address, error) {
-	header := api.chain.CurrentHeader()
+func (api * API) GetCandidatesByDelegate(delegate common.Address, number *rpc.BlockNumber) ([]common.Address, error) {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	if header == nil {
+		return nil, errUnknownBlock
+	}
 	voteTrie, err := types.NewVoteTrie(header.DposContext.VoteHash, api.dpos.db)
 	if err != nil {
 		return []common.Address{}, err
@@ -158,8 +158,16 @@ func (api * API) GetCandidatesByDelegate(delegate common.Address) ([]common.Addr
 	return candidateList, nil
 }
 
-func (api * API) GetAddrIsCandidate(addr common.Address) (bool, error) {
-	header := api.chain.CurrentHeader()
+func (api * API) GetAddrIsCandidate(addr common.Address,number *rpc.BlockNumber) (bool, error) {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	if header == nil {
+		return false, errUnknownBlock
+	}
 	candidateTrie, err := types.NewCandidateTrie(header.DposContext.CandidateHash, api.dpos.db)
 	if err != nil {
 		return false, err
@@ -175,4 +183,195 @@ func (api * API) GetAddrIsCandidate(addr common.Address) (bool, error) {
 	}else{
 		return false, nil
 	}
+}
+
+func (api * API) GetTotalWei(number *rpc.BlockNumber) (*big.Int, error) {
+	blockNumber := int64(0)
+	if number == nil || *number == rpc.LatestBlockNumber {
+		blockNumber = api.chain.CurrentHeader().Number.Int64()
+	} else {
+		blockNumber = number.Int64()
+	}
+	increaseWei := big.NewInt(0).Mul(defaultBlockReward,big.NewInt(blockNumber))
+	totalWei := big.NewInt(0).Add(socInitCount,increaseWei)
+	return totalWei, nil
+}
+
+func (api * API) GetEpochInterval(number *rpc.BlockNumber) ( *big.Int, error) {
+	return big.NewInt(epochInterval), nil
+}
+
+func (api * API) GetValidatorsMintCount(number *rpc.BlockNumber) (map[string]interface{}, error) {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	if header == nil {
+		return nil, errUnknownBlock
+	}
+	timestamp := header.Time.Uint64()
+	epochIntervalBig,_ := api.GetEpochInterval(number)
+	epochIntervalUint64 := epochIntervalBig.Uint64()
+
+
+	mintCountList := []int64{}
+	currentEpoch := timestamp / epochIntervalUint64
+	epochProgress := timestamp % epochIntervalUint64
+	fields := map[string]interface{}{
+		"validatorsList": []common.Address{},
+		"mintCountList": mintCountList,
+		"epochInterval":epochIntervalUint64,
+		"currentEpoch":currentEpoch,
+		"epochProgress":epochProgress,
+	}
+
+	validators,err := api.GetValidators(number)
+	if err != nil {
+		return fields, err
+	}
+	fields["validatorsList"] = validators
+
+
+	MintCntTrie, err := types.NewMintCntTrie(header.DposContext.MintCntHash, api.dpos.db)
+	if err != nil {
+		return fields, err
+	}
+
+	for _, validator := range validators {
+		key := make([]byte, 8)
+		binary.BigEndian.PutUint64(key, uint64(currentEpoch))
+		key = append(key, validator.Bytes()...)
+		cnt := int64(0)
+		if cntBytes := MintCntTrie.Get(key); cntBytes != nil {
+			cnt = int64(binary.BigEndian.Uint64(cntBytes))
+		}
+		mintCountList = append(mintCountList,cnt)
+	}
+	fields["mintCountList"] = mintCountList
+	return fields,nil
+}
+
+func (api * API) GetCandidatesAndVoteCountTopN(topN hexutil.Uint64, number *rpc.BlockNumber) ( map[string]interface{}, error) {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	if header == nil {
+		return nil, errUnknownBlock
+	}
+
+	candidatesList := []common.Address{}
+	voteCountList := []*big.Int{}
+	totalVoteCount := big.NewInt(0)
+	fields := map[string]interface{}{
+		"candidatesList": candidatesList,
+		"voteCountList": voteCountList,
+		"totalVoteCount":totalVoteCount,
+	}
+	votes := map[common.Address]*big.Int{}
+	retCandidates := common.SortableAddresses{}
+
+
+	delegateTrie, err := types.NewDelegateTrie(header.DposContext.DelegateHash, api.dpos.db)
+	if err != nil {
+		return fields, err
+	}
+	candidateTrie, err := types.NewCandidateTrie(header.DposContext.CandidateHash, api.dpos.db)
+	if err != nil {
+		return fields, err
+	}
+
+	statedb, err := api.chain.StateAt(header.Root)
+	if statedb == nil || err != nil {
+		return fields, err
+	}
+
+	iterCandidate := trie.NewIterator(candidateTrie.NodeIterator(nil))
+	existCandidate := iterCandidate.Next()
+	if !existCandidate {
+		return fields, nil
+	}
+	for existCandidate {
+		candidate := iterCandidate.Value
+		candidateAddr := common.BytesToAddress(candidate)
+		delegateIterator := trie.NewIterator(delegateTrie.NodeIterator(candidate))
+
+		existDelegator := delegateIterator.NextPrefix(candidate)
+		if !existDelegator {
+			votes[candidateAddr] = new(big.Int)
+			existCandidate = iterCandidate.Next()
+			continue
+		}
+		for existDelegator {
+			delegator := delegateIterator.Value
+			score, ok := votes[candidateAddr]
+			if !ok {
+				score = new(big.Int)
+			}
+			delegatorAddr := common.BytesToAddress(delegator)
+			weight := statedb.GetBalance(delegatorAddr)
+			score.Add(score, weight)
+			votes[candidateAddr] = score
+			existDelegator = delegateIterator.NextPrefix(candidate)
+		}
+		existCandidate = iterCandidate.Next()
+		totalVoteCount.Add(totalVoteCount,votes[candidateAddr])
+	}
+
+	for candidate, cnt := range votes {
+		retCandidates = append(retCandidates, &common.SortableAddress{ Address:candidate, Weight:cnt})
+	}
+
+	sort.Sort(retCandidates)
+	if topN > 0 && hexutil.Uint64(len(retCandidates)) > topN {
+		retCandidates = retCandidates[:topN]
+	}
+	for _, sortableAddress := range retCandidates{
+		candidatesList = append(candidatesList,sortableAddress.Address)
+		voteCountList = append(voteCountList,sortableAddress.Weight)
+	}
+
+	fields["candidatesList"] = candidatesList
+	fields["voteCountList"] = voteCountList
+	fields["totalVoteCount"] = totalVoteCount
+	return fields,nil
+}
+
+func (api *API) GetAddrVoteCount(address common.Address, number *rpc.BlockNumber) ( *big.Int, error) {
+	var header *types.Header
+	if number == nil || *number == rpc.LatestBlockNumber {
+		header = api.chain.CurrentHeader()
+	} else {
+		header = api.chain.GetHeaderByNumber(uint64(number.Int64()))
+	}
+	if header == nil {
+		return nil, errUnknownBlock
+	}
+	totalVoteCount := big.NewInt(0)
+
+	delegateTrie, err := types.NewDelegateTrie(header.DposContext.DelegateHash, api.dpos.db)
+	if err != nil {
+		return totalVoteCount, err
+	}
+	statedb, err := api.chain.StateAt(header.Root)
+	if statedb == nil || err != nil {
+		return totalVoteCount, err
+	}
+
+	delegateIterator := trie.NewIterator(delegateTrie.NodeIterator(address.Bytes()))
+	existDelegator := delegateIterator.NextPrefix(address.Bytes())
+
+	for existDelegator {
+		delegator := delegateIterator.Value
+		delegatorAddr := common.BytesToAddress(delegator)
+		count := statedb.GetBalance(delegatorAddr)
+		totalVoteCount.Add(totalVoteCount, count)
+		existDelegator = delegateIterator.NextPrefix(address.Bytes())
+	}
+
+	return totalVoteCount, nil
 }

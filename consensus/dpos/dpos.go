@@ -35,6 +35,7 @@ const (
 	maxValidatorSize = 7
 	safeSize         = maxValidatorSize*2/3 + 1
 	consensusSize    = maxValidatorSize*2/3 + 1
+
 )
 
 var (
@@ -42,6 +43,7 @@ var (
 	big8  = big.NewInt(8)
 	big32 = big.NewInt(32)
 
+	socInitCount =  big.NewInt(1).Mul(big.NewInt(15e+8),big.NewInt(1e+18)) //15e+8)* (1e+18)
 	defaultBlockReward  *big.Int = big.NewInt(5e+18)  // Block reward in wei for successfully mining a block
 	timeOfFirstBlock = int64(0)
 

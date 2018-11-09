@@ -1204,6 +1204,24 @@ func submitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		return common.Hash{}, err
 	}
 
+	//check to is a candidate or not
+	if tx.Type() == types.Delegate || tx.Type() == types.UnDelegate {
+		// the candidate must be candidate
+		if tx.To() == nil {
+			return common.Hash{}, errors.New("vote transaction must has To address")
+		}
+
+		candidateInTrie, err := b.CurrentBlock().DposContext.CandidateTrie().TryGet(tx.To().Bytes())
+		if err != nil {
+			log.Error("gGt candidate failed ",  "error:", err,  "to:", tx.To())
+			return common.Hash{}, err
+		}
+
+		if candidateInTrie == nil {
+			return common.Hash{}, errors.New("invalid candidate to delegate")
+		}
+	}
+
 	if err := b.SendTx(ctx, tx); err != nil {
 		return common.Hash{}, err
 	}
