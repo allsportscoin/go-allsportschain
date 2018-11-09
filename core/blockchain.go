@@ -576,6 +576,13 @@ func (bc *BlockChain) GetBlock(hash common.Hash, number uint64) *types.Block {
 	if block == nil {
 		return nil
 	}
+
+	// rebuild dpos context from header
+	dposContext, _ := types.NewDposContextFromProto(bc.db, block.Header().DposContext)
+	if dposContext != nil {
+		//log.Error("create dposContext faild", err)
+		block.DposContext = dposContext
+	}
 	// Cache the found block for next time and return
 	bc.blockCache.Add(block.Hash(), block)
 	return block
