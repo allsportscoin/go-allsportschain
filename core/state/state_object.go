@@ -90,7 +90,7 @@ type stateObject struct {
 
 // empty returns whether the account is considered empty.
 func (s *stateObject) empty() bool {
-	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
+	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && s.data.CalledCount.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
 }
 
 // Account is the Ethereum consensus representation of accounts.
@@ -107,6 +107,9 @@ type Account struct {
 func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 	if data.Balance == nil {
 		data.Balance = new(big.Int)
+	}
+	if data.CalledCount == nil {
+		data.CalledCount = new(big.Int)
 	}
 	if data.CodeHash == nil {
 		data.CodeHash = emptyCodeHash
@@ -371,12 +374,10 @@ func (c *stateObject) AddCalledCount(amount *big.Int) {
 }
 
 func (self *stateObject) SetCalledCount(amount *big.Int) {
-	/*
 	self.db.journal.append(calledCountChange{
 		account: &self.address,
 		prev:    new(big.Int).Set(self.data.CalledCount),
 	})
-	*/
 	self.setCalledCount(amount)
 }
 

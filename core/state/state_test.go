@@ -40,10 +40,13 @@ func (s *StateSuite) TestDump(c *checker.C) {
 	// generate a few entries
 	obj1 := s.state.GetOrNewStateObject(toAddr([]byte{0x01}))
 	obj1.AddBalance(big.NewInt(22))
+	obj1.SetCalledCount(big.NewInt(22))
 	obj2 := s.state.GetOrNewStateObject(toAddr([]byte{0x01, 0x02}))
 	obj2.SetCode(crypto.Keccak256Hash([]byte{3, 3, 3, 3, 3, 3, 3}), []byte{3, 3, 3, 3, 3, 3, 3})
+	obj2.SetCalledCount(big.NewInt(3))
 	obj3 := s.state.GetOrNewStateObject(toAddr([]byte{0x02}))
-	obj3.SetCalledCount(big.NewInt(1))
+	obj3.SetBalance(big.NewInt(44))
+	obj3.SetCalledCount(big.NewInt(44))
 
 	// write some of them to the trie
 	s.state.updateStateObject(obj1)
@@ -53,11 +56,11 @@ func (s *StateSuite) TestDump(c *checker.C) {
 	// check that dump contains the state objects that are in trie
 	got := string(s.state.Dump())
 	want := `{
-    "root": "71edff0130dd2385947095001c73d9e28d862fc286fca2b922ca6f6f3cddfdd2",
+    "root": "c0268071f86bcde56dba5ce1cee2ac65deed9a1c6d8049b2e06a32912aa6d19d",
     "accounts": {
         "0000000000000000000000000000000000000001": {
             "balance": "22",
-			"calledCount":"0",
+            "calledCount": "22",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
@@ -66,7 +69,7 @@ func (s *StateSuite) TestDump(c *checker.C) {
         },
         "0000000000000000000000000000000000000002": {
             "balance": "44",
-			"calledCount":"0",
+            "calledCount": "44",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
@@ -75,7 +78,7 @@ func (s *StateSuite) TestDump(c *checker.C) {
         },
         "0000000000000000000000000000000000000102": {
             "balance": "0",
-			"calledCount":"1",
+            "calledCount": "3",
             "nonce": 0,
             "root": "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             "codeHash": "87874902497a5bb968da31a2998d8f22e949d1ef6214bcdedd8bae24cca4b9e3",

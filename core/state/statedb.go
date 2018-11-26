@@ -350,7 +350,7 @@ func (self *StateDB) Suicide(addr common.Address) bool {
 	})
 	stateObject.markSuicided()
 	stateObject.data.Balance = new(big.Int)
-
+	stateObject.data.CalledCount = new(big.Int)
 	return true
 }
 
