@@ -44,6 +44,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/rpc"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/allsportschain/go-allsportschain/trie"
 )
 
 const (
@@ -1206,19 +1207,59 @@ func submitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 
 	//check to is a candidate or not
 	if tx.Type() == types.Delegate || tx.Type() == types.UnDelegate {
+
+		signer := types.MakeSigner(b.ChainConfig(), b.CurrentBlock().Number())
+		msg,err := tx.AsMessage(signer)
+		if err != nil {
+			log.Error("AsMessage failed ")
+			return common.Hash{}, err
+		}
+
+		delegatorAddr := msg.From()
+		candidateAddr := tx.To()
+		delegator := delegatorAddr.Bytes()
+		candidate := candidateAddr.Bytes()
+		d := b.CurrentBlock().DposContext
+
 		// the candidate must be candidate
-		if tx.To() == nil {
+		if candidateAddr == nil {
 			return common.Hash{}, errors.New("vote transaction must has To address")
 		}
 
-		candidateInTrie, err := b.CurrentBlock().DposContext.CandidateTrie().TryGet(tx.To().Bytes())
+		candidateInTrie, err := b.CurrentBlock().DposContext.CandidateTrie().TryGet(candidate)
 		if err != nil {
-			log.Error("gGt candidate failed ",  "error:", err,  "to:", tx.To())
+			log.Error("gGt candidate failed ", "error:", err, "to:", candidateAddr)
 			return common.Hash{}, err
 		}
 
 		if candidateInTrie == nil {
-			return common.Hash{}, errors.New("invalid candidate to delegate")
+			return common.Hash{}, errors.New(candidateAddr.String() + " is invalid candidate")
+		}
+
+		if tx.Type() == types.Delegate {
+			// judge candidate exists
+			oldCandidate, err := d.VoteTrie().TryGet(append(delegator, candidate...))
+			if err != nil {
+				return common.Hash{}, err
+			}
+			if oldCandidate != nil {
+				return common.Hash{}, errors.New(candidateAddr.String() + " Has already been voted")
+			}
+
+			// judge count
+			voteIterator := trie.NewIterator(d.VoteTrie().NodeIterator(delegator))
+			existVoteCount := voteIterator.NextPrefixCount(delegator)
+			if existVoteCount >= types.MaxVoteCandidateNum {
+				return common.Hash{}, errors.New(fmt.Sprintf("%v has already voted %v votes, Can't exceed %v votes.", delegatorAddr.String(), existVoteCount, types.MaxVoteCandidateNum))
+			}
+		}else if tx.Type() == types.UnDelegate {
+			oldCandidate, err := d.VoteTrie().TryGet(append(delegator, candidate...))
+			if err != nil {
+				return common.Hash{}, err
+			}
+			if !bytes.Equal(candidate, oldCandidate) {
+				return common.Hash{}, errors.New("mismatch candidate to undelegate")
+			}
 		}
 	}
 
@@ -1280,11 +1321,11 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Sen
 // The sender is responsible for signing the transaction and using the correct nonce.
 func (s *PublicTransactionPoolAPI) SendRawTransaction(ctx context.Context, encodedTx hexutil.Bytes) (common.Hash, error) {
 	tx := new(types.Transaction)
-	log.Info(fmt.Sprint("send raw transaction before decode: %v \n", encodedTx))
+	log.Info(fmt.Sprintf("send raw transaction before decode: %v \n", encodedTx))
 	if err := rlp.DecodeBytes(encodedTx, tx); err != nil {
 		return common.Hash{}, err
 	}
-	log.Info(fmt.Sprint("send raw transaction: %v \n", tx))
+	log.Info(fmt.Sprintf("send raw transaction: %v \n", tx))
 	return submitTransaction(ctx, s.b, tx)
 }
 
