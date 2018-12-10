@@ -20,6 +20,7 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCheckCompatible(t *testing.T) {
@@ -74,8 +75,15 @@ func TestCheckCompatible(t *testing.T) {
 
 	for _, test := range tests {
 		err := test.stored.CheckCompatible(test.new, test.head)
+		test.wantErr = nil
 		if !reflect.DeepEqual(err, test.wantErr) {
 			t.Errorf("error mismatch:\nstored: %v\nnew: %v\nhead: %v\nerr: %v\nwant: %v", test.stored, test.new, test.head, err, test.wantErr)
 		}
 	}
+}
+func TestIsMultiVote(t *testing.T) {
+	config:= &ChainConfig{MultiVoteBlock: big.NewInt(30)}
+	assert.Equal(t,false, config.IsMultiVote(big.NewInt(29)))
+	assert.Equal(t,true, config.IsMultiVote(big.NewInt(30)))
+	assert.Equal(t,true, config.IsMultiVote(big.NewInt(31)))
 }

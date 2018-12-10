@@ -25,7 +25,7 @@ import (
 
 // Genesis hashes to enforce below configs on.
 var (
-	MainnetGenesisHash = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3")
+	MainnetGenesisHash = common.HexToHash("0xa5b6f0fd250a33f7da30755bde0032ee8806b9182faa5d3994989362fc3e30b7")
 	TestnetGenesisHash = common.HexToHash("0xbf2abec9832cf089d5d827b94951b3e464f3fdd859ca1d8b1fe4ec063ab65cb8")
 )
 
@@ -42,7 +42,17 @@ var (
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
 		ConstantinopleBlock: nil,
-		Dpos: 				&DposConfig{},
+		MultiVoteBlock:      big.NewInt(0),
+		Dpos: 				&DposConfig{Validators: []common.Address {
+			common.HexToAddress("0x90ae4a42d524506f99249e5fc10d948c4e07f441"),
+			common.HexToAddress("0x97cf512dc01011c3e4926c80b12d55609729bc4a"),
+			common.HexToAddress("0xaaf44b8cdb34c41b17bcdb6dedd34bd5c775f9d7"),
+			common.HexToAddress("0x7e3a758190beba57902b5b08b59f15a102e53e67"),
+			common.HexToAddress("0xe72239a57f06079b1c849d90a4c606e0ff1e3cad"),
+			common.HexToAddress("0x6034094ff39f12786f8d5f45ae1ece5ec6b83064"),
+			common.HexToAddress("0x6c18f4f165572afa4068dfa3ce537c4e22575144"),
+			},
+		},
 	}
 
 	// TestnetChainConfig contains the chain parameters to run a node on the Ropsten test network.
@@ -57,6 +67,7 @@ var (
 		EIP158Block:         big.NewInt(0),
 		ByzantiumBlock:      big.NewInt(0),
 		ConstantinopleBlock: nil,
+		MultiVoteBlock:      big.NewInt(0),
 		Dpos: 				&DposConfig{Validators: []common.Address {
 			common.HexToAddress("0x90ae4a42d524506f99249e5fc10d948c4e07f441"),
 			common.HexToAddress("0x97cf512dc01011c3e4926c80b12d55609729bc4a"),
@@ -81,6 +92,7 @@ var (
 		EIP158Block:         big.NewInt(3),
 		ByzantiumBlock:      big.NewInt(1035301),
 		ConstantinopleBlock: nil,
+		MultiVoteBlock:      nil,
 		Clique: &CliqueConfig{
 			Period: 15,
 			Epoch:  30000,
@@ -92,16 +104,16 @@ var (
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllSochashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil,nil, new(DposConfig), nil}
+	AllSochashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil,big.NewInt(0),nil, new(DposConfig), nil}
 
 	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the Clique consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil,&CliqueConfig{Period: 0, Epoch: 30000}}
+	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil,nil, nil,&CliqueConfig{Period: 0, Epoch: 30000}}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil,new(DposConfig), nil}
+	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil,nil,new(DposConfig), nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
@@ -127,6 +139,7 @@ type ChainConfig struct {
 
 	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium switch block (nil = no fork, 0 = already on byzantium)
 	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
+	MultiVoteBlock   *big.Int `json:"multiVoteBlock,omitempty"`   // The multi-vote  switch block (nil = no fork)
 
 	// Various consensus engines
 	Sochash *SochashConfig `json:"sochash,omitempty"`
@@ -176,7 +189,7 @@ func (c *ChainConfig) String() string {
 	default:
 		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Engine: %v}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v MultiVoteBlock: %v Engine: %v}",
 		c.ChainID,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -186,10 +199,15 @@ func (c *ChainConfig) String() string {
 		c.EIP158Block,
 		c.ByzantiumBlock,
 		c.ConstantinopleBlock,
+		c.MultiVoteBlock,
 		engine,
 	)
 }
 
+// IsMultiVote returns whether num is either equal to the multi-vote block or greater.
+func (c *ChainConfig) IsMultiVote(num *big.Int) bool {
+	return isForked(c.MultiVoteBlock, num)
+}
 // IsHomestead returns whether num is either equal to the homestead block or greater.
 func (c *ChainConfig) IsHomestead(num *big.Int) bool {
 	return isForked(big.NewInt(0), num)
