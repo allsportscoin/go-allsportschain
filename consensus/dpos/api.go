@@ -147,13 +147,11 @@ func (api * API) GetCandidatesByDelegate(delegate common.Address, number *rpc.Bl
 		return []common.Address{}, err
 	}
 
-	candidate, err := voteTrie.TryGet(delegate.Bytes())
-	if err != nil {
-		return []common.Address{}, err
-	}
 	candidateList := make([]common.Address, 0)
-	if len(candidate) != 0 {
-		candidateList = append(candidateList, common.BytesToAddress(candidate))
+	candidateIterator := trie.NewIterator(voteTrie.NodeIterator(delegate.Bytes()))
+	for candidateIterator.NextPrefix(delegate.Bytes()) {
+		candidate := candidateIterator.Value
+		candidateList = append(candidateList,common.BytesToAddress(candidate))
 	}
 	return candidateList, nil
 }
@@ -272,54 +270,31 @@ func (api * API) GetCandidatesAndVoteCountTopN(topN hexutil.Uint64, number *rpc.
 		"voteCountList": voteCountList,
 		"totalVoteCount":totalVoteCount,
 	}
-	votes := map[common.Address]*big.Int{}
 	retCandidates := common.SortableAddresses{}
-
-
-	delegateTrie, err := types.NewDelegateTrie(header.DposContext.DelegateHash, api.dpos.db)
-	if err != nil {
-		return fields, err
-	}
-	candidateTrie, err := types.NewCandidateTrie(header.DposContext.CandidateHash, api.dpos.db)
-	if err != nil {
-		return fields, err
-	}
 
 	statedb, err := api.chain.StateAt(header.Root)
 	if statedb == nil || err != nil {
 		return fields, err
 	}
 
-	iterCandidate := trie.NewIterator(candidateTrie.NodeIterator(nil))
-	existCandidate := iterCandidate.Next()
-	if !existCandidate {
-		return fields, nil
+	dposContext, err := types.NewDposContextFromProto(api.dpos.db, &types.DposContextProto{
+		EpochHash:     header.DposContext.EpochHash,
+		DelegateHash:  header.DposContext.DelegateHash,
+		CandidateHash: header.DposContext.CandidateHash,
+		VoteHash:      header.DposContext.VoteHash,
+		MintCntHash:  header.DposContext.MintCntHash,
+	})
+	if err != nil {
+		return fields, err
 	}
-	for existCandidate {
-		candidate := iterCandidate.Value
-		candidateAddr := common.BytesToAddress(candidate)
-		delegateIterator := trie.NewIterator(delegateTrie.NodeIterator(candidate))
 
-		existDelegator := delegateIterator.NextPrefix(candidate)
-		if !existDelegator {
-			votes[candidateAddr] = new(big.Int)
-			existCandidate = iterCandidate.Next()
-			continue
-		}
-		for existDelegator {
-			delegator := delegateIterator.Value
-			score, ok := votes[candidateAddr]
-			if !ok {
-				score = new(big.Int)
-			}
-			delegatorAddr := common.BytesToAddress(delegator)
-			weight := statedb.GetBalance(delegatorAddr)
-			score.Add(score, weight)
-			votes[candidateAddr] = score
-			existDelegator = delegateIterator.NextPrefix(candidate)
-		}
-		existCandidate = iterCandidate.Next()
-		totalVoteCount.Add(totalVoteCount,votes[candidateAddr])
+	epochContext := &EpochContext{
+		DposContext: dposContext,
+		statedb:     statedb,
+	}
+	votes, err := epochContext.countVotes()
+	if err != nil {
+		return fields, err
 	}
 
 	for candidate, cnt := range votes {
@@ -333,6 +308,21 @@ func (api * API) GetCandidatesAndVoteCountTopN(topN hexutil.Uint64, number *rpc.
 	for _, sortableAddress := range retCandidates{
 		candidatesList = append(candidatesList,sortableAddress.Address)
 		voteCountList = append(voteCountList,sortableAddress.Weight)
+	}
+
+	delegateMap := map[common.Address]bool{}
+	delegateIterator := trie.NewIterator(dposContext.DelegateTrie().NodeIterator(nil))
+	existDelegator := delegateIterator.Next()
+
+	for existDelegator {
+		delegator := delegateIterator.Value
+		delegatorAddr := common.BytesToAddress(delegator)
+		if delegateMap[delegatorAddr] == false {
+			count := statedb.GetBalance(delegatorAddr)
+			totalVoteCount.Add(totalVoteCount, count)
+			delegateMap[delegatorAddr] = true
+		}
+		existDelegator = delegateIterator.Next()
 	}
 
 	fields["candidatesList"] = candidatesList

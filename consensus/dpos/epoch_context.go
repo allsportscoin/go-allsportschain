@@ -14,6 +14,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/crypto"
 	"github.com/allsportschain/go-allsportschain/log"
 	"github.com/allsportschain/go-allsportschain/trie"
+	"github.com/allsportschain/go-allsportschain/params"
 )
 
 type EpochContext struct {
@@ -62,7 +63,7 @@ func (ec *EpochContext) countVotes() (votes map[common.Address]*big.Int, err err
 	return votes, nil
 }
 
-func (ec *EpochContext) kickoutValidator(epoch int64) error {
+func (ec *EpochContext) kickoutValidator(config *params.ChainConfig, header *types.Header, epoch int64) error {
 	validators, err := ec.DposContext.GetValidators()
 	if err != nil {
 		return fmt.Errorf("failed to get validator: %s", err)
@@ -117,7 +118,7 @@ func (ec *EpochContext) kickoutValidator(epoch int64) error {
 			return nil
 		}
 
-		if err := ec.DposContext.KickoutCandidate(validator.Address); err != nil {
+		if err := ec.DposContext.KickoutCandidate(config, header, validator.Address); err != nil {
 			return err
 		}
 		// if kickout success, candidateCount minus 1
@@ -147,7 +148,19 @@ func (ec *EpochContext) lookupValidator(now int64) (validator common.Address, er
 }
 
 
-func (ec *EpochContext) tryElect(genesis, parent *types.Header) error {
+func (ec *EpochContext) tryElect(config *params.ChainConfig, header,genesis, parent *types.Header) error {
+
+	if config.MultiVoteBlock != nil && config.MultiVoteBlock.Cmp(genesis.Number) !=0 && config.MultiVoteBlock.Cmp(header.Number) == 0{
+		voteIterator := trie.NewIterator(ec.DposContext.VoteTrie().NodeIterator(nil))
+		existVote := voteIterator.Next()
+		for existVote {
+			ec.DposContext.VoteTrie().Delete(voteIterator.Key)
+			ec.DposContext.VoteTrie().TryUpdate(append(voteIterator.Key, voteIterator.Value...),voteIterator.Value)
+			existVote = voteIterator.Next()
+		}
+		log.Info("change multi-vote on block number : "+ config.MultiVoteBlock.String())
+	}
+
 	genesisEpoch := genesis.Time.Int64() / epochInterval
 	prevEpoch := parent.Time.Int64() / epochInterval
 	currentEpoch := ec.TimeStamp / epochInterval
@@ -165,7 +178,7 @@ func (ec *EpochContext) tryElect(genesis, parent *types.Header) error {
 		binary.BigEndian.PutUint64(iBytes, uint64(i))
 		// if prevEpoch is not genesis, kickout not active candidate
 		if !prevEpochIsGenesis && iter.NextPrefix(iBytes) {
-			if err := ec.kickoutValidator(i); err != nil {
+			if err := ec.kickoutValidator(config, header, i); err != nil {
 				return err
 			}
 		}

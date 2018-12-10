@@ -10,6 +10,8 @@ import (
 	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/trie"
 	"github.com/stretchr/testify/assert"
+	"math/big"
+	"github.com/allsportschain/go-allsportschain/params"
 )
 
 var (
@@ -39,6 +41,14 @@ var (
 )
 
 func mockNewDposContext(db socdb.Database) *types.DposContext {
+
+	config := &params.ChainConfig{
+		MultiVoteBlock:      big.NewInt(0),
+	}
+	header := &types.Header{
+		Number: big.NewInt(1000),
+	}
+
 	dposContext, err := types.NewDposContextFromProto(db, &types.DposContextProto{})
 	if err != nil {
 		return nil
@@ -53,9 +63,8 @@ func mockNewDposContext(db socdb.Database) *types.DposContext {
 	for j := 0; j < len(MockEpoch); j++ {
 		delegator = common.HexToAddress(MockEpoch[j]).Bytes()
 		candidate = common.HexToAddress(MockEpoch[j]).Bytes()
-		dposContext.DelegateTrie().TryUpdate(append(candidate, delegator...), candidate)
-		dposContext.CandidateTrie().TryUpdate(candidate, candidate)
-		dposContext.VoteTrie().TryUpdate(candidate, candidate)
+		dposContext.BecomeCandidate(config,header,common.BytesToAddress(candidate))
+		dposContext.Delegate(config,header,common.BytesToAddress(delegator),common.BytesToAddress(candidate))
 	}
 	return dposContext
 }

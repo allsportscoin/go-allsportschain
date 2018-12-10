@@ -188,7 +188,7 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
-	if parent.Time.Uint64()+uint64(blockInterval) > header.Time.Uint64() {
+	if parent.Time.Uint64()+uint64(blockInterval) > header.Time.Uint64() || header.Time.Cmp(parent.Time) <= 0 {
 		return ErrInvalidTimestamp
 	}
 	return nil
@@ -371,7 +371,7 @@ func (d *Dpos) Finalize(chain consensus.ChainReader, header *types.Header, state
 		}
 	}
 	genesis := chain.GetHeaderByNumber(0)
-	err := epochContext.tryElect(genesis, parent)
+	err := epochContext.tryElect(chain.Config(), header, genesis, parent)
 	if err != nil {
 		return nil, fmt.Errorf("got error when elect next epoch, err: %s", err)
 	}
