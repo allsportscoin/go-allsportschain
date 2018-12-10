@@ -41,6 +41,8 @@ const (
 	UnCandidate
 	Delegate
 	UnDelegate
+	//TODO
+	//Prods
 )
 
 var (

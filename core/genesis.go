@@ -178,6 +178,7 @@ func SetupGenesisBlock(db socdb.Database, genesis *Genesis) (*params.ChainConfig
 	}
 
 	// Get the existing chain configuration.
+	log.Info("stored is "+stored.String())
 	newcfg := genesis.configOrDefault(stored)
 	storedcfg := rawdb.ReadChainConfig(db, stored)
 	if storedcfg == nil {
@@ -209,12 +210,16 @@ func SetupGenesisBlock(db socdb.Database, genesis *Genesis) (*params.ChainConfig
 func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	switch {
 	case g != nil:
+		log.Info("ChainConfig is genesis")
 		return g.Config
 	case ghash == params.MainnetGenesisHash:
+		log.Info("ChainConfig is MainnetChainConfig")
 		return params.MainnetChainConfig
 	case ghash == params.TestnetGenesisHash:
+		log.Info("ChainConfig is TestnetChainConfig")
 		return params.TestnetChainConfig
 	default:
+		log.Info("ChainConfig is AllSochashProtocolChanges")
 		return params.AllSochashProtocolChanges
 	}
 }
@@ -245,9 +250,6 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 	sort.Sort(txs)
 	root := statedb.IntermediateRoot(false)
 
-	// add dposcontext
-	dposContext := initGenesisDposContext(g, db)
-	dposContextProto := dposContext.ToProto()
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
 		Nonce:      types.EncodeNonce(g.Nonce),
@@ -259,9 +261,12 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 		Difficulty: g.Difficulty,
 		MixDigest:  g.Mixhash,
 		Coinbase:   g.Coinbase,
-		DposContext: dposContextProto,
 		Root:       root,
 	}
+	// add dposcontext
+	dposContext := initGenesisDposContext(g,head, db)
+	head.DposContext = dposContext.ToProto()
+
 	if g.GasLimit == 0 {
 		head.GasLimit = params.GenesisGasLimit
 	}
@@ -328,9 +333,10 @@ func DefaultGenesisBlock() *Genesis {
 		Config:     params.MainnetChainConfig,
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
-		GasLimit:   5000,
-		Difficulty: big.NewInt(17179869184),
-		Alloc:      decodePrealloc(mainnetAllocData),
+		GasLimit:   1342177280,
+		Difficulty: big.NewInt(131072),
+		//Alloc:      decodePrealloc(mainnetAllocData),
+		Alloc:		defaultMainNetGennesisAlloc(),
 	}
 }
 
@@ -358,7 +364,21 @@ func defaultTestNetGennesisAlloc() map[common.Address]GenesisAccount {
 		common.HexToAddress("0xf97e86587b04c6f7a033fb365a8413e2e1af1f3e"): {Balance: big.NewInt(1).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:7},
 
 	}
+	return alloc
+}
 
+func defaultMainNetGennesisAlloc() map[common.Address]GenesisAccount {
+	alloc := map[common.Address]GenesisAccount{
+		common.HexToAddress("0x90ae4a42d524506f99249e5fc10d948c4e07f441"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:0},
+		common.HexToAddress("0x97cf512dc01011c3e4926c80b12d55609729bc4a"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:1},
+		common.HexToAddress("0xaaf44b8cdb34c41b17bcdb6dedd34bd5c775f9d7"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:2},
+		common.HexToAddress("0x7e3a758190beba57902b5b08b59f15a102e53e67"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:3},
+		common.HexToAddress("0xe72239a57f06079b1c849d90a4c606e0ff1e3cad"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:4},
+		common.HexToAddress("0x6034094ff39f12786f8d5f45ae1ece5ec6b83064"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:5},
+		common.HexToAddress("0x6c18f4f165572afa4068dfa3ce537c4e22575144"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:6},
+		common.HexToAddress("0xf97e86587b04c6f7a033fb365a8413e2e1af1f3e"): {Balance: big.NewInt(1).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:7},
+
+	}
 	return alloc
 }
 
@@ -413,7 +433,7 @@ func decodePrealloc(data string) GenesisAlloc {
 	return ga
 }
 
-func initGenesisDposContext(g *Genesis, db socdb.Database) *types.DposContext {
+func initGenesisDposContext(g *Genesis,header *types.Header, db socdb.Database) *types.DposContext {
 	dc, err := types.NewDposContextFromProto(db, &types.DposContextProto{})
 	if err != nil {
 		return nil
@@ -421,10 +441,10 @@ func initGenesisDposContext(g *Genesis, db socdb.Database) *types.DposContext {
 	if g.Config != nil && g.Config.Dpos != nil && g.Config.Dpos.Validators != nil {
 		dc.SetValidators(g.Config.Dpos.Validators)
 		for _, validator := range g.Config.Dpos.Validators {
-			dc.DelegateTrie().TryUpdate(append(validator.Bytes(), validator.Bytes()...), validator.Bytes())
-			dc.CandidateTrie().TryUpdate(validator.Bytes(), validator.Bytes())
-			dc.VoteTrie().TryUpdate(validator.Bytes(), validator.Bytes())
+			dc.BecomeCandidate(g.Config,header,validator)
+			dc.Delegate(g.Config,header,validator, validator)
 		}
+		log.Info("Will change multi-vote on block number : "+ g.Config.MultiVoteBlock.String())
 	}
 
 	return dc

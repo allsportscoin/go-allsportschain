@@ -3,14 +3,14 @@ package types
 import (
 	"bytes"
 	"errors"
-	"fmt"
-
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/crypto/sha3"
 	"github.com/allsportschain/go-allsportschain/rlp"
 	"github.com/allsportschain/go-allsportschain/trie"
 	"github.com/allsportschain/go-allsportschain/socdb"
+	"fmt"
 	"encoding/binary"
+	"github.com/allsportschain/go-allsportschain/params"
 )
 
 type DposContext struct {
@@ -29,6 +29,9 @@ var (
 	votePrefix      = []byte("vote-")
 	candidatePrefix = []byte("candidate-")
 	mintCntPrefix   = []byte("mintCnt-")
+)
+const (
+	 MaxVoteCandidateNum = 30
 )
 
 func NewEpochTrie(root common.Hash, db socdb.Database) (*trie.Trie, error) {
@@ -212,7 +215,7 @@ func (p *DposContextProto) Root() (h common.Hash) {
 	return h
 }
 
-func (d *DposContext) KickoutCandidate(candidateAddr common.Address) error {
+func (d *DposContext) KickoutCandidate(config *params.ChainConfig, header *Header, candidateAddr common.Address) error {
 	candidate := candidateAddr.Bytes()
 	err := d.candidateTrie.TryDelete(candidate)
 	if err != nil {
@@ -230,14 +233,21 @@ func (d *DposContext) KickoutCandidate(candidateAddr common.Address) error {
 				return err
 			}
 		}
-		v, err := d.voteTrie.TryGet(delegator)
+		voteKey := []byte{}
+		if config.IsMultiVote(header.Number) {
+			voteKey = append(delegator, candidate...)
+		}else{
+			voteKey = delegator
+		}
+
+		v, err := d.voteTrie.TryGet(voteKey)
 		if err != nil {
 			if _, ok := err.(*trie.MissingNodeError); !ok {
 				return err
 			}
 		}
 		if err == nil && bytes.Equal(v, candidate) {
-			err = d.voteTrie.TryDelete(delegator)
+			err = d.voteTrie.TryDelete(voteKey)
 			if err != nil {
 				if _, ok := err.(*trie.MissingNodeError); !ok {
 					return err
@@ -248,12 +258,12 @@ func (d *DposContext) KickoutCandidate(candidateAddr common.Address) error {
 	return nil
 }
 
-func (d *DposContext) BecomeCandidate(candidateAddr common.Address) error {
+func (d *DposContext) BecomeCandidate(config *params.ChainConfig, header *Header, candidateAddr common.Address) error {
 	candidate := candidateAddr.Bytes()
 	return d.candidateTrie.TryUpdate(candidate, candidate)
 }
 
-func (d *DposContext) Delegate(delegatorAddr, candidateAddr common.Address) error {
+func (d *DposContext) Delegate(config *params.ChainConfig, header *Header, delegatorAddr, candidateAddr common.Address) error {
 	delegator, candidate := delegatorAddr.Bytes(), candidateAddr.Bytes()
 
 	// the candidate must be candidate
@@ -262,26 +272,57 @@ func (d *DposContext) Delegate(delegatorAddr, candidateAddr common.Address) erro
 		return err
 	}
 	if candidateInTrie == nil {
-		return errors.New("invalid candidate to delegate")
+		return errors.New(candidateAddr.String() + " is invalid candidate")
 	}
 
-	// delete old candidate if exists
-	oldCandidate, err := d.voteTrie.TryGet(delegator)
-	if err != nil {
-		if _, ok := err.(*trie.MissingNodeError); !ok {
+	if config.IsMultiVote(header.Number) {
+		// judge candidate exists
+		oldCandidate, err := d.voteTrie.TryGet(append(delegator, candidate...))
+		if err != nil {
+			if _, ok := err.(*trie.MissingNodeError); !ok {
+				return err
+			}
+		}
+		if oldCandidate != nil {
+			return errors.New(candidateAddr.String() + " Has already been voted")
+		}
+
+		// judge count
+		voteIterator := trie.NewIterator(d.voteTrie.NodeIterator(delegator))
+		existVoteCount := voteIterator.NextPrefixCount(delegator)
+		if existVoteCount >= MaxVoteCandidateNum {
+			return errors.New(fmt.Sprintf("%v has already voted %v votes, Can't exceed %v votes.", delegatorAddr.String(), existVoteCount, MaxVoteCandidateNum))
+		}
+
+		//vote
+		if err = d.delegateTrie.TryUpdate(append(candidate, delegator...), delegator); err != nil {
+			return err
+		}
+		if err := d.voteTrie.TryUpdate(append(delegator, candidate...), candidate); err != nil {
+			return err
+		}
+	}else{
+		// delete old candidate if exists
+		oldCandidate, err := d.voteTrie.TryGet(delegator)
+		if err != nil {
+			if _, ok := err.(*trie.MissingNodeError); !ok {
+				return err
+			}
+		}
+		if oldCandidate != nil {
+			d.delegateTrie.Delete(append(oldCandidate, delegator...))
+		}
+		if err = d.delegateTrie.TryUpdate(append(candidate, delegator...), delegator); err != nil {
+			return err
+		}
+		if err := d.voteTrie.TryUpdate(delegator, candidate); err != nil {
 			return err
 		}
 	}
-	if oldCandidate != nil {
-		d.delegateTrie.Delete(append(oldCandidate, delegator...))
-	}
-	if err = d.delegateTrie.TryUpdate(append(candidate, delegator...), delegator); err != nil {
-		return err
-	}
-	return d.voteTrie.TryUpdate(delegator, candidate)
+	return nil
 }
 
-func (d *DposContext) UnDelegate(delegatorAddr, candidateAddr common.Address) error {
+func (d *DposContext) UnDelegate(config *params.ChainConfig, header *Header, delegatorAddr, candidateAddr common.Address) error {
 	delegator, candidate := delegatorAddr.Bytes(), candidateAddr.Bytes()
 
 	// the candidate must be candidate
@@ -293,7 +334,14 @@ func (d *DposContext) UnDelegate(delegatorAddr, candidateAddr common.Address) er
 		return errors.New("invalid candidate to undelegate")
 	}
 
-	oldCandidate, err := d.voteTrie.TryGet(delegator)
+	voteKey := []byte{}
+	if config.IsMultiVote(header.Number) {
+		voteKey = append(delegator, candidate...)
+	}else{
+		voteKey = delegator
+	}
+
+	oldCandidate, err := d.voteTrie.TryGet(voteKey)
 	if err != nil {
 		return err
 	}
@@ -304,7 +352,58 @@ func (d *DposContext) UnDelegate(delegatorAddr, candidateAddr common.Address) er
 	if err = d.delegateTrie.TryDelete(append(candidate, delegator...)); err != nil {
 		return err
 	}
-	return d.voteTrie.TryDelete(delegator)
+	if err = d.voteTrie.TryDelete(voteKey); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//TODO js api
+func (d *DposContext) Prods(config *params.ChainConfig, header *Header, delegatorAddr common.Address, candidateAddrList []common.Address) error {
+
+	if !config.IsMultiVote(header.Number) {
+		return errors.New("Don't support multi-vote before block number:"+config.MultiVoteBlock.String())
+	}
+	// judge count
+	if len(candidateAddrList) > MaxVoteCandidateNum {
+		return errors.New(fmt.Sprintf("Can't exceed %v candidates", MaxVoteCandidateNum))
+	}
+
+	// the candidate must be candidate
+	for _, candidateAddr := range candidateAddrList {
+		candidate := candidateAddr.Bytes()
+		candidateInTrie, err := d.candidateTrie.TryGet(candidate)
+		if err != nil {
+			return err
+		}
+		if candidateInTrie == nil {
+			return errors.New(candidateAddr.String() +" is not a candidate")
+		}
+	}
+
+	delegator := delegatorAddr.Bytes()
+
+	// delete old candidate
+	voteIterator := trie.NewIterator(d.voteTrie.NodeIterator(delegator))
+	existVote := voteIterator.NextPrefix(delegator)
+	for existVote {
+		d.voteTrie.Delete(voteIterator.Key)
+		d.delegateTrie.Delete(append(voteIterator.Value, delegator...))
+		existVote = voteIterator.NextPrefix(delegator)
+	}
+
+	// vote
+	for _, candidateAddr := range candidateAddrList {
+		candidate := candidateAddr.Bytes()
+		if err := d.delegateTrie.TryUpdate(append(candidate, delegator...), delegator); err != nil {
+			return err
+		}
+		if err := d.voteTrie.TryUpdate(append(delegator, candidate...), candidate); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (d *DposContext) CommitTo() (*DposContextProto, error) {
@@ -419,8 +518,4 @@ func (dc * DposContext) GetCandidates() ([]common.Address, error) {
 	return candidates, nil
 }
 
-//get addr votes form vote trie
-func (dc * DposContext) GetAddrVote(addr common.Address) (common.Address, error) {
-	candidate, err := dc.voteTrie.TryGet(addr.Bytes())
-	return common.BytesToAddress(candidate), err
-}
+

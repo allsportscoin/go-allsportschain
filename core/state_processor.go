@@ -94,19 +94,21 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	// Create a new environment which holds all relevant information
 	// about the transaction and calling mechanisms.
 	vmenv := vm.NewEVM(context, statedb, config, cfg)
+
+	if msg.Type() != types.Normal {
+		err := applyDposMessage(config,header,dposContext, msg)
+		if err != nil {
+			log.Error(fmt.Sprintf("addDposMessage faile %v \n", err))
+			return types.NewReceipt([]byte{}, true, *usedGas), 0, nil
+		}
+	}
+
 	// Apply the transaction to the current state (included in the env)
 	_, gas, failed, err := ApplyMessage(vmenv, msg, gp)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if msg.Type() != types.Normal {
-		err := applyDposMessage(dposContext, msg)
-		if err != nil {
-			log.Error(fmt.Sprintf("addDposMessage faile %v \n", err))
-			return nil, 0, err
-		}
-	}
 	// Update the state with pending changes
 	var root []byte
 	if config.IsByzantium(header.Number) {
@@ -132,16 +134,19 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	return receipt, gas, err
 }
 
-func applyDposMessage(dposContext *types.DposContext, msg types.Message) error {
+func applyDposMessage(config *params.ChainConfig, header *types.Header, dposContext *types.DposContext, msg types.Message) error {
 	switch msg.Type() {
 	case types.Candidate:
-		return dposContext.BecomeCandidate(msg.From())
+		return dposContext.BecomeCandidate(config, header, msg.From())
 	case types.UnCandidate:
-		return dposContext.KickoutCandidate(msg.From())
+		return dposContext.KickoutCandidate(config, header, msg.From())
 	case types.Delegate:
-		return dposContext.Delegate(msg.From(), *(msg.To()))
+		return dposContext.Delegate(config, header, msg.From(), *(msg.To()))
 	case types.UnDelegate:
-		return dposContext.UnDelegate(msg.From(), *(msg.To()))
+		return dposContext.UnDelegate(config, header, msg.From(), *(msg.To()))
+	//TODO
+	//case types.Prods:
+		//return dposContext.Prods(config, header, msg.From(), *(msg.To()))
 	default:
 		return types.ErrInvalidType
 	}
