@@ -24,6 +24,7 @@ import (
 
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/socdb"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIterator(t *testing.T) {
@@ -152,6 +153,33 @@ var testdata2 = []kvs{
 	{"jars", "d"},
 }
 
+func TestIteratorNextPrefixCount(t *testing.T) {
+	trie := newEmpty()
+	for _, val := range testdata1 {
+		trie.Update([]byte(val.k), []byte(val.v))
+	}
+
+	// Seek to the middle.
+	prefix := []byte("fab")
+	it := NewIterator(trie.NodeIterator(prefix))
+	assert.Equal(t,it.NextPrefixCount(prefix),int64(1))
+
+	// Seek to a non-existent key.
+	prefix = []byte("barc")
+	it = NewIterator(trie.NodeIterator(prefix))
+	assert.Equal(t,it.NextPrefixCount(prefix),int64(0))
+
+	prefix = []byte("foo")
+	it = NewIterator(trie.NodeIterator(prefix))
+	assert.Equal(t,it.NextPrefixCount(prefix),int64(3))
+
+	// Seek beyond the end.
+	prefix = []byte("z")
+	it = NewIterator(trie.NodeIterator(prefix))
+	assert.Equal(t,it.NextPrefixCount(prefix),int64(0))
+
+}
+
 func TestIteratorSeek(t *testing.T) {
 	trie := newEmpty()
 	for _, val := range testdata1 {
@@ -176,6 +204,8 @@ func TestIteratorSeek(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+
 
 func checkIteratorOrder(want []kvs, it *Iterator) error {
 	for it.Next() {

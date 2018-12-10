@@ -135,7 +135,7 @@ var (
 	}
 	TestnetFlag = cli.BoolFlag{
 		Name:  "testnet",
-		Usage: "Ropsten network: pre-configured proof-of-work test network",
+		Usage: "Ropsten network: pre-configured delegated proof of stake test network",
 	}
 	RinkebyFlag = cli.BoolFlag{
 		Name:  "rinkeby",
@@ -1114,6 +1114,7 @@ func SetSocConfig(ctx *cli.Context, stack *node.Node, cfg *soc.Config) {
 			cfg.NetworkId = 3
 		}
 		cfg.Genesis = core.DefaultTestnetGenesisBlock()
+		log.Info("Override any default configs for hard coded networks, when "+TestnetFlag.Name)
 	case ctx.GlobalBool(RinkebyFlag.Name):
 		if !ctx.GlobalIsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 4

@@ -73,6 +73,24 @@ func (it *Iterator) NextPrefix(prefix []byte) bool {
 	return false
 }
 
+func (it *Iterator) NextPrefixCount(prefix []byte) int64 {
+	count := int64(0)
+	for it.nodeIt.Next(true) {
+		if it.nodeIt.Leaf() {
+			it.Key = it.nodeIt.LeafKey()
+			if (!bytes.Equal(it.Key[0:len(prefix)], prefix)) {
+				return count
+			}
+			it.Value = it.nodeIt.LeafBlob()
+			count = count + 1
+		}
+	}
+	it.Key = nil
+	it.Value = nil
+	it.Err = it.nodeIt.Error()
+	return count
+}
+
 // Prove generates the Merkle proof for the leaf node the iterator is currently
 // positioned on.
 func (it *Iterator) Prove() [][]byte {

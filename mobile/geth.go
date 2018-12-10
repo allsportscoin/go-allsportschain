@@ -36,6 +36,7 @@ import (
 	"github.com/allsportschain/go-allsportschain/p2p/nat"
 	"github.com/allsportschain/go-allsportschain/params"
 	whisper "github.com/allsportschain/go-allsportschain/whisper/whisperv6"
+	"github.com/allsportschain/go-allsportschain/log"
 )
 
 // NodeConfig represents the collection of configuration values to fine tune the Geth
@@ -148,6 +149,7 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 		// If we have the testnet, hard code the chain configs too
 		if config.EthereumGenesis == TestnetGenesis() {
 			genesis.Config = params.TestnetChainConfig
+			log.Info("config is TestnetChainConfig on newNode function")
 			if config.EthereumNetworkID == 1 {
 				config.EthereumNetworkID = 3
 			}

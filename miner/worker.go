@@ -656,7 +656,6 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsB
 		//if tx.Protected() && !env.config.IsEIP155(env.header.Number) {
 		if tx.Protected() && !env.config.IsEIP155(env.header.Number) {
 			log.Trace("Ignoring reply protected transaction", "hash", tx.Hash())
-
 			txs.Pop()
 			continue
 		}
@@ -716,10 +715,11 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsB
 
 func (env *Work) commitTransaction(tx *types.Transaction, bc *core.BlockChain, coinbase common.Address, gp *core.GasPool) (error, []*types.Log) {
 	snap := env.state.Snapshot()
-
+	dposSnap := env.dposContext.Snapshot()
 	receipt, _, err := core.ApplyTransaction(env.config, bc, &coinbase, gp, env.state, env.header, tx, &env.header.GasUsed, vm.Config{}, env.dposContext)
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
+		env.dposContext.RevertToSnapShot(dposSnap)
 		return err, nil
 	}
 	env.txs = append(env.txs, tx)
