@@ -128,6 +128,8 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gsocConfig) {
 		utils.Fatalf("Failed to create the protocol stack: %v", err)
 	}
 	utils.SetSocConfig(ctx, stack, &cfg.Soc)
+	cfg.Soc.IPCPath = cfg.Node.IPCPath; //add for updatevote
+	cfg.Soc.DataDir = cfg.Node.DataDir; //add for updatevote
 	if ctx.GlobalIsSet(utils.SocStatsURLFlag.Name) {
 		cfg.Ethstats.URL = ctx.GlobalString(utils.SocStatsURLFlag.Name)
 	}

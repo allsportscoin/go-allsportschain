@@ -294,7 +294,7 @@ func (c *Client) CallContext(ctx context.Context, result interface{}, method str
 		return err
 	}
 	op := &requestOp{ids: []json.RawMessage{msg.ID}, resp: make(chan *jsonrpcMessage, 1)}
-	log.Info(fmt.Sprintf("after new message in context %v \n", op))
+	//log.Info(fmt.Sprintf("after new message in context %v \n", op))
 
 	if c.isHTTP {
 		err = c.sendHTTP(ctx, op, msg)
@@ -314,7 +314,7 @@ func (c *Client) CallContext(ctx context.Context, result interface{}, method str
 	case len(resp.Result) == 0:
 		return ErrNoResult
 	default:
-		log.Info(fmt.Sprintf("after new message in response %v \n", result))
+		//log.Info(fmt.Sprintf("after new message in response %v \n", result))
 		return json.Unmarshal(resp.Result, &result)
 	}
 }
@@ -450,7 +450,6 @@ func (c *Client) Subscribe(ctx context.Context, namespace string, channel interf
 
 func (c *Client) newMessage(method string, paramsIn ...interface{}) (*jsonrpcMessage, error) {
 
-	log.Info(fmt.Sprintf("ltf_methods RegisterName name = %v",paramsIn))
 	params, err := json.Marshal(paramsIn)
 	if err != nil {
 		return nil, err
@@ -463,9 +462,9 @@ func (c *Client) newMessage(method string, paramsIn ...interface{}) (*jsonrpcMes
 func (c *Client) send(ctx context.Context, op *requestOp, msg interface{}) error {
 	select {
 	case c.requestOp <- op:
-		log.Info("", "msg", log.Lazy{Fn: func() string {
-			return fmt.Sprint("sending ", msg)
-		}})
+		//log.Info("", "msg", log.Lazy{Fn: func() string {
+		//	return fmt.Sprint("sending ", msg)
+		//}})
 		err := c.write(ctx, msg)
 		c.sendDone <- err
 		return err
@@ -490,9 +489,9 @@ func (c *Client) write(ctx context.Context, msg interface{}) error {
 		}
 	}
 	c.writeConn.SetWriteDeadline(deadline)
-	log.Info(fmt.Sprintf("msg in write %v \n", msg))
+	//log.Info(fmt.Sprintf("msg in write %v \n", msg))
 	err := json.NewEncoder(c.writeConn).Encode(msg)
-	log.Info(fmt.Sprintf("msg in write after encoder %v \n", err))
+	//log.Info(fmt.Sprintf("msg in write after encoder %v \n", err))
 
 	if err != nil {
 		c.writeConn = nil

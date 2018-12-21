@@ -17,7 +17,12 @@
 // Package common contains various helper functions.
 package common
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"encoding/base64"
+	"github.com/allsportschain/go-allsportschain/log"
+	"regexp"
+)
 
 // ToHex returns the hex representation of b, prefixed with '0x'.
 // For empty slices, the return value is "0x0".
@@ -82,6 +87,27 @@ func isHex(str string) bool {
 // Bytes2Hex returns the hexadecimal encoding of d.
 func Bytes2Hex(d []byte) string {
 	return hex.EncodeToString(d)
+}
+
+func Bytes2Base64(b []byte) string {
+	str := base64.StdEncoding.EncodeToString(b)
+	return str
+}
+
+func Base64ToString(b string) (string,error) {
+	res,err := base64.StdEncoding.DecodeString(b)
+	if err != nil {
+		log.Info("base64 decode to string error.",err.Error())
+		return "", err
+	}
+	return string(res),nil
+}
+
+func ValidBase64(b string) bool {
+	if m, err := regexp.MatchString(`^[a-zA-Z0-9+=/,.'" ]{0,32}$`, b); !m || err != nil {
+		return false
+	}
+	return true
 }
 
 // Hex2Bytes returns the bytes represented by the hexadecimal string str.

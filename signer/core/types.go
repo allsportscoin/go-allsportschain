@@ -70,6 +70,7 @@ type SendTxArgs struct {
 	Nonce    hexutil.Uint64           `json:"nonce"`
 	// We accept "data" and "input" for backwards-compatibility reasons.
 	Data  *hexutil.Bytes `json:"data"`
+	Extra 	 *hexutil.Bytes `json:"extra"`
 	Input *hexutil.Bytes `json:"input"`
 	Type   hexutil.Uint `json:"type"`
 }
@@ -90,7 +91,7 @@ func (args *SendTxArgs) toTransaction() *types.Transaction {
 		input = *args.Input
 	}
 	if args.To == nil {
-		return types.NewContractCreation(uint64(args.Nonce), (*big.Int)(&args.Value), uint64(args.Gas), (*big.Int)(&args.GasPrice), input)
+		return types.NewContractCreation(uint64(args.Nonce), (*big.Int)(&args.Value), uint64(args.Gas), (*big.Int)(&args.GasPrice), input, *args.Extra)
 	}
-	return types.NewTransaction(uint64(args.Nonce), args.To.Address(), (*big.Int)(&args.Value), (types.TxType)(args.Type), (uint64)(args.Gas), (*big.Int)(&args.GasPrice), input)
+	return types.NewTransaction(uint64(args.Nonce), args.To.Address(), (*big.Int)(&args.Value), (types.TxType)(args.Type), (uint64)(args.Gas), (*big.Int)(&args.GasPrice), input, *args.Extra)
 }

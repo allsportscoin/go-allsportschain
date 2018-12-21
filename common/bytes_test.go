@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	checker "gopkg.in/check.v1"
+	"fmt"
 )
 
 type BytesSuite struct{}
@@ -32,6 +33,13 @@ func (s *BytesSuite) TestCopyBytes(c *checker.C) {
 	exp1 := []byte{1, 2, 3, 4}
 	res1 := CopyBytes(data1)
 	c.Assert(res1, checker.DeepEquals, exp1)
+}
+
+func TestByte2Base64(t *testing.T) {
+	b := Hex2Bytes("0x72656d61726b313233");
+	res := Bytes2Base64(b)
+	fmt.Sprintf(res)
+
 }
 
 func (s *BytesSuite) TestLeftPadBytes(c *checker.C) {

@@ -114,6 +114,10 @@ type Config struct {
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
+
+	//ext data for updatevote
+	IPCPath string `toml:",omitempty"`
+	DataDir string
 }
 
 type configMarshaling struct {

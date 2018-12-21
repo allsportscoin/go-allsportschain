@@ -1192,7 +1192,7 @@ module.exports = SolidityTypeInt;
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file param.js
  * @author Marek Kotewicz <marek@ethdev.com>
  * @date 2015
@@ -1211,7 +1211,7 @@ var SolidityParam = function (value, offset) {
 
 /**
  * This method should be used to get length of params's dynamic part
- * 
+ *
  * @method dynamicPartLength
  * @returns {Number} length of dynamic part (in bytes)
  */
@@ -1239,7 +1239,7 @@ SolidityParam.prototype.withOffset = function (offset) {
  * @param {SolidityParam} result of combination
  */
 SolidityParam.prototype.combine = function (param) {
-    return new SolidityParam(this.value + param.value); 
+    return new SolidityParam(this.value + param.value);
 };
 
 /**
@@ -1271,8 +1271,8 @@ SolidityParam.prototype.offsetAsBytes = function () {
  */
 SolidityParam.prototype.staticPart = function () {
     if (!this.isDynamic()) {
-        return this.value; 
-    } 
+        return this.value;
+    }
     return this.offsetAsBytes();
 };
 
@@ -1304,7 +1304,7 @@ SolidityParam.prototype.encode = function () {
  * @returns {String}
  */
 SolidityParam.encodeList = function (params) {
-    
+
     // updating offsets
     var totalOffset = params.length * 32;
     var offsetParams = params.map(function (param) {
@@ -1746,13 +1746,13 @@ if (typeof XMLHttpRequest === 'undefined') {
 
 /**
  * Utils
- * 
+ *
  * @module utils
  */
 
 /**
  * Utility functions
- * 
+ *
  * @class [utils] config
  * @constructor
  */
@@ -1819,7 +1819,7 @@ module.exports = {
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file sha3.js
  * @author Marek Kotewicz <marek@ethdev.com>
  * @date 2015
@@ -2045,17 +2045,17 @@ var transformToFullName = function (json) {
 /**
  * Should be called to get display name of contract function
  *
- * @method extractDisplayName
+ * @method remarkctDisplayName
  * @param {String} name of function/event
  * @returns {String} display name for function/event eg. multiply(uint256) -> multiply
  */
-var extractDisplayName = function (name) {
+var remarkctDisplayName = function (name) {
     var length = name.indexOf('(');
     return length !== -1 ? name.substr(0, length) : name;
 };
 
 /// @returns overloaded part of function/event name
-var extractTypeName = function (name) {
+var remarkctTypeName = function (name) {
     /// TODO: make it invulnerable
     var length = name.indexOf('(');
     return length !== -1 ? name.substr(length + 1, name.length - 1 - (length + 1)).replace(' ', '') : "";
@@ -2098,14 +2098,17 @@ var fromDecimal = function (value) {
 var toHex = function (val) {
     /*jshint maxcomplexity: 8 */
 
-    if (isBoolean(val))
+    if (isBoolean(val)) {
         return fromDecimal(+val);
+    }
 
-    if (isBigNumber(val))
+    if (isBigNumber(val)) {
         return fromDecimal(val);
+    }
 
-    if (typeof val === 'object')
+    if (typeof val === 'object') {
         return fromUtf8(JSON.stringify(val));
+    }
 
     // if its a negative number, pass it through fromDecimal
     if (isString(val)) {
@@ -2116,9 +2119,26 @@ var toHex = function (val) {
         else if (!isFinite(val))
             return fromAscii(val);
     }
-
     return fromDecimal(val);
 };
+
+/**
+ * convert str to hex
+ * treat str as completely string
+ * @param str
+ * @returns {string}
+*/
+var stringToHex = function(str){
+var val="";
+for(var i = 0; i < str.length; i++){
+  if(val == "")
+    val = str.charCodeAt(i).toString(16);
+  else
+    val += "" + str.charCodeAt(i).toString(16);
+  }
+  return "0x"+val;
+}
+
 
 /**
  * Returns value of unit in Wei
@@ -2211,6 +2231,80 @@ var toBigNumber = function(number) {
 
     return new BigNumber(number.toString(10), 10);
 };
+
+/**
+ *
+ * @param input {String}
+ * @returns {string}
+ *
+*/
+var decodeBase64 = function(input) {
+    var _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    var output = "";
+    var chr1, chr2, chr3;
+    var enc1, enc2, enc3, enc4;
+    var i = 0;
+    input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+    while (i < input.length) {
+        enc1 = _keyStr.indexOf(input.charAt(i++));
+        enc2 = _keyStr.indexOf(input.charAt(i++));
+        enc3 = _keyStr.indexOf(input.charAt(i++));
+        enc4 = _keyStr.indexOf(input.charAt(i++));
+        chr1 = (enc1 << 2) | (enc2 >> 4);
+        chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+        chr3 = ((enc3 & 3) << 6) | enc4;
+        output = output + String.fromCharCode(chr1);
+        if (enc3 != 64) {
+            output = output + String.fromCharCode(chr2);
+        }
+        if (enc4 != 64) {
+            output = output + String.fromCharCode(chr3);
+        }
+    }
+    _utf8_decode = function (utftext) {
+        var string = "";
+        var i = 0;//note
+        var c = c1 = c2 = 0;
+        while ( i < utftext.length ) {
+            c = utftext.charCodeAt(i);
+            if (c < 128) {
+                string += String.fromCharCode(c);
+                i++;
+            } else if((c > 191) && (c < 224)) {
+                c2 = utftext.charCodeAt(i+1);
+                string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+                i += 2;
+            } else {
+                c2 = utftext.charCodeAt(i+1);
+                c3 = utftext.charCodeAt(i+2);
+                string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+                i += 3;
+            }
+        }
+        return string;
+    }
+    output = _utf8_decode(output);
+    return output;
+}
+
+        /**
+         * Convert a byte array to a hex string
+         *
+         * Note: Implementation from crypto-js
+         *
+         * @method bytesToHex
+         * @param {Array} bytes
+         * @return {String} the hex string
+         */
+        var bytesToHex = function(bytes) {
+            for (var hex = [], i = 0; i < bytes.length; i++) {
+                /* jshint ignore:start */
+                hex.push((bytes[i] >>> 4).toString(16));
+                hex.push((bytes[i] & 0xF).toString(16));
+                /* jshint ignore:end */
+            }
+            return '0x'+ hex.join("");
+        };
 
 /**
  * Takes and input transforms it into bignumber and if it is negative value, into two's complement
@@ -2444,6 +2538,7 @@ module.exports = {
     padLeft: padLeft,
     padRight: padRight,
     toHex: toHex,
+    stringToHex:stringToHex,
     toDecimal: toDecimal,
     fromDecimal: fromDecimal,
     toUtf8: toUtf8,
@@ -2451,11 +2546,12 @@ module.exports = {
     fromUtf8: fromUtf8,
     fromAscii: fromAscii,
     transformToFullName: transformToFullName,
-    extractDisplayName: extractDisplayName,
-    extractTypeName: extractTypeName,
+    remarkctDisplayName: remarkctDisplayName,
+    remarkctTypeName: remarkctTypeName,
     toWei: toWei,
     fromWei: fromWei,
     toBigNumber: toBigNumber,
+    decodeBase64: decodeBase64,
     toTwosComplement: toTwosComplement,
     toAddress: toAddress,
     isBigNumber: isBigNumber,
@@ -2739,7 +2835,7 @@ module.exports = AllSolidityEvents;
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file batch.js
  * @author Marek Kotewicz <marek@ethdev.com>
  * @date 2015
@@ -2784,7 +2880,7 @@ Batch.prototype.execute = function () {
                 requests[index].callback(null, (requests[index].format ? requests[index].format(result.result) : result.result));
             }
         });
-    }); 
+    });
 };
 
 module.exports = Batch;
@@ -2971,7 +3067,7 @@ var ContractFactory = function (soc, abi) {
      */
     this.new = function () {
         /*jshint maxcomplexity: 7 */
-        
+
         var contract = new Contract(this.soc, this.abi);
 
         // parse arguments
@@ -3119,7 +3215,7 @@ module.exports = ContractFactory;
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file errors.js
  * @author Marek Kotewicz <marek@ethdev.com>
  * @date 2015
@@ -3210,7 +3306,7 @@ SolidityEvent.prototype.types = function (indexed) {
  * @return {String} event display name
  */
 SolidityEvent.prototype.displayName = function () {
-    return utils.extractDisplayName(this._name);
+    return utils.remarkctDisplayName(this._name);
 };
 
 /**
@@ -3220,7 +3316,7 @@ SolidityEvent.prototype.displayName = function () {
  * @return {String} event type name
  */
 SolidityEvent.prototype.typeName = function () {
-    return utils.extractTypeName(this._name);
+    return utils.remarkctTypeName(this._name);
 };
 
 /**
@@ -3394,7 +3490,7 @@ var extend = function (web3) {
         }
     };
 
-    ex.formatters = formatters; 
+    ex.formatters = formatters;
     ex.utils = utils;
     ex.Method = Method;
     ex.Property = Property;
@@ -3724,7 +3820,6 @@ var inputBlockNumberFormatter = function (blockNumber) {
  * @returns object
 */
 var inputCallFormatter = function (options){
-
     options.from = options.from || config.defaultAccount;
 
     if (options.from) {
@@ -3739,6 +3834,12 @@ var inputCallFormatter = function (options){
         options.type = utils.toHex(0);
     } else {
         options['type'] = utils.toHex(options['type']);
+    }
+
+    if (!options.extra) {
+        options.extra = "";
+    } else {
+        options['extra'] = utils.stringToHex(options['extra']);
     }
 
     ['gasPrice', 'gas', 'value', 'nonce'].filter(function (key) {
@@ -3758,7 +3859,6 @@ var inputCallFormatter = function (options){
  * @returns object
 */
 var inputTransactionFormatter = function (options){
-
     options.from = options.from || config.defaultAccount;
     options.from = inputAddressFormatter(options.from);
 
@@ -3770,6 +3870,12 @@ var inputTransactionFormatter = function (options){
         options.type = utils.toHex(0);
     } else {
         options['type'] = utils.toHex(options['type']);
+    }
+
+    if (!options.extra) {
+        options.extra = "";
+    } else {
+        options['extra'] = utils.stringToHex(options['extra']);
     }
 
     ['gasPrice', 'gas', 'value', 'nonce'].filter(function (key) {
@@ -3797,6 +3903,9 @@ var outputTransactionFormatter = function (tx){
     tx.gas = utils.toDecimal(tx.gas);
     tx.gasPrice = utils.toBigNumber(tx.gasPrice);
     tx.value = utils.toBigNumber(tx.value);
+    if(tx.extra !== null) {
+        tx.extra = utils.decodeBase64(tx.extra);
+    }
     return tx;
 };
 
@@ -3819,6 +3928,10 @@ var outputTransactionReceiptFormatter = function (receipt){
         receipt.logs = receipt.logs.map(function(log){
             return outputLogFormatter(log);
         });
+    }
+
+    if(receipt.extra !== null) {
+        receipt.extra = utils.decodeBase64(receipt.extra);
     }
 
     return receipt;
@@ -4045,13 +4158,13 @@ var SolidityFunction = function (soc, json, address) {
     this._address = address;
 };
 
-SolidityFunction.prototype.extractCallback = function (args) {
+SolidityFunction.prototype.remarkctCallback = function (args) {
     if (utils.isFunction(args[args.length - 1])) {
         return args.pop(); // modify the args array!
     }
 };
 
-SolidityFunction.prototype.extractDefaultBlock = function (args) {
+SolidityFunction.prototype.remarkctDefaultBlock = function (args) {
     if (args.length > this._inputTypes.length && !utils.isObject(args[args.length -1])) {
         return formatters.inputDefaultBlockNumberFormatter(args.pop()); // modify the args array!
     }
@@ -4128,8 +4241,8 @@ SolidityFunction.prototype.unpackOutput = function (output) {
  */
 SolidityFunction.prototype.call = function () {
     var args = Array.prototype.slice.call(arguments).filter(function (a) {return a !== undefined; });
-    var callback = this.extractCallback(args);
-    var defaultBlock = this.extractDefaultBlock(args);
+    var callback = this.remarkctCallback(args);
+    var defaultBlock = this.remarkctDefaultBlock(args);
     var payload = this.toPayload(args);
 
 
@@ -4161,7 +4274,7 @@ SolidityFunction.prototype.call = function () {
  */
 SolidityFunction.prototype.sendTransaction = function () {
     var args = Array.prototype.slice.call(arguments).filter(function (a) {return a !== undefined; });
-    var callback = this.extractCallback(args);
+    var callback = this.remarkctCallback(args);
     var payload = this.toPayload(args);
 
     if (payload.value > 0 && !this._payable) {
@@ -4182,7 +4295,7 @@ SolidityFunction.prototype.sendTransaction = function () {
  */
 SolidityFunction.prototype.estimateGas = function () {
     var args = Array.prototype.slice.call(arguments);
-    var callback = this.extractCallback(args);
+    var callback = this.remarkctCallback(args);
     var payload = this.toPayload(args);
 
     if (!callback) {
@@ -4212,7 +4325,7 @@ SolidityFunction.prototype.getData = function () {
  * @return {String} display name of the function
  */
 SolidityFunction.prototype.displayName = function () {
-    return utils.extractDisplayName(this._name);
+    return utils.remarkctDisplayName(this._name);
 };
 
 /**
@@ -4222,7 +4335,7 @@ SolidityFunction.prototype.displayName = function () {
  * @return {String} type name of the function
  */
 SolidityFunction.prototype.typeName = function () {
-    return utils.extractTypeName(this._name);
+    return utils.remarkctTypeName(this._name);
 };
 
 /**
@@ -4233,7 +4346,7 @@ SolidityFunction.prototype.typeName = function () {
  */
 SolidityFunction.prototype.request = function () {
     var args = Array.prototype.slice.call(arguments);
-    var callback = this.extractCallback(args);
+    var callback = this.remarkctCallback(args);
     var payload = this.toPayload(args);
     var format = this.unpackOutput.bind(this);
 
@@ -4460,7 +4573,7 @@ module.exports = HttpProvider;
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file iban.js
  * @author Marek Kotewicz <marek@ethdev.com>
  * @date 2015
@@ -4660,7 +4773,7 @@ Iban.prototype.address = function () {
         var base36 = this._iban.substr(4);
         var asBn = new BigNumber(base36, 36);
         return padLeft(asBn.toString(16), 20);
-    } 
+    }
 
     return '';
 };
@@ -4705,7 +4818,7 @@ var IpcProvider = function (path, net) {
     var _this = this;
     this.responseCallbacks = {};
     this.path = path;
-    
+
     this.connection = net.connect({path: this.path});
 
     this.connection.on('error', function(e){
@@ -4715,7 +4828,7 @@ var IpcProvider = function (path, net) {
 
     this.connection.on('end', function(){
         _this._timeout();
-    }); 
+    });
 
 
     // LISTEN FOR CONNECTION RESPONSES
@@ -4754,7 +4867,7 @@ Will parse the response and make an array out of it.
 IpcProvider.prototype._parseResponse = function(data) {
     var _this = this,
         returnValues = [];
-    
+
     // DE-CHUNKER
     var dechunkedData = data
         .replace(/\}[\n\r]?\{/g,'}|--|{') // }{
@@ -4858,7 +4971,7 @@ IpcProvider.prototype.send = function (payload) {
         try {
             result = JSON.parse(data);
         } catch(e) {
-            throw errors.InvalidResponse(data);                
+            throw errors.InvalidResponse(data);
         }
 
         return result;
@@ -5019,13 +5132,13 @@ Method.prototype.getCall = function (args) {
 };
 
 /**
- * Should be used to extract callback from array of arguments. Modifies input param
+ * Should be used to remarkct callback from array of arguments. Modifies input param
  *
- * @method extractCallback
+ * @method remarkctCallback
  * @param {Array} arguments
  * @return {Function|Null} callback, if exists
  */
-Method.prototype.extractCallback = function (args) {
+Method.prototype.remarkctCallback = function (args) {
     if (utils.isFunction(args[args.length - 1])) {
         return args.pop(); // modify the args array!
     }
@@ -5033,7 +5146,7 @@ Method.prototype.extractCallback = function (args) {
 
 /**
  * Should be called to check if the number of arguments is correct
- * 
+ *
  * @method validateArgs
  * @param {Array} arguments
  * @throws {Error} if it is not
@@ -5046,7 +5159,7 @@ Method.prototype.validateArgs = function (args) {
 
 /**
  * Should be called to format input args of method
- * 
+ *
  * @method formatInput
  * @param {Array}
  * @return {Array}
@@ -5081,7 +5194,7 @@ Method.prototype.formatOutput = function (result) {
  */
 Method.prototype.toPayload = function (args) {
     var call = this.getCall(args);
-    var callback = this.extractCallback(args);
+    var callback = this.remarkctCallback(args);
     var params = this.formatInput(args);
     this.validateArgs(params);
 
@@ -5100,7 +5213,7 @@ Method.prototype.attachToObject = function (obj) {
         obj[name[0]] = obj[name[0]] || {};
         obj[name[0]][name[1]] = func;
     } else {
-        obj[name[0]] = func; 
+        obj[name[0]] = func;
     }
 };
 
@@ -5163,8 +5276,8 @@ var DB = function (web3) {
     this._requestManager = web3._requestManager;
 
     var self = this;
-    
-    methods().forEach(function(method) { 
+
+    methods().forEach(function(method) {
         method.attachToObject(self);
         method.setRequestManager(web3._requestManager);
     });
@@ -5475,6 +5588,18 @@ var methods = function () {
         params: 0
     });
 
+    var getAddrByAlias = new Method({
+        name: 'getAddrByAlias',
+        call: 'soc_getAddrByAlias',
+        params: 1
+    });
+
+    var getAliasByAddr = new Method({
+        name: 'getAliasByAddr',
+        call: 'soc_getAliasByAddr',
+        params: 1
+    });
+
     return [
         getCalledCount,
         getBalance,
@@ -5499,7 +5624,9 @@ var methods = function () {
         compileLLL,
         compileSerpent,
         submitWork,
-        getWork
+        getWork,
+        getAddrByAlias,
+        getAliasByAddr,
     ];
 };
 
@@ -5599,7 +5726,7 @@ var Net = function (web3) {
 
     var self = this;
 
-    properties().forEach(function(p) { 
+    properties().forEach(function(p) {
         p.attachToObject(self);
         p.setRequestManager(web3._requestManager);
     });
@@ -6158,7 +6285,7 @@ module.exports = {
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file namereg.js
  * @author Marek Kotewicz <marek@ethdev.com>
  * @date 2015
@@ -6244,13 +6371,13 @@ Property.prototype.formatOutput = function (result) {
 };
 
 /**
- * Should be used to extract callback from array of arguments. Modifies input param
+ * Should be used to remarkct callback from array of arguments. Modifies input param
  *
- * @method extractCallback
+ * @method remarkctCallback
  * @param {Array} arguments
  * @return {Function|Null} callback, if exists
  */
-Property.prototype.extractCallback = function (args) {
+Property.prototype.remarkctCallback = function (args) {
     if (utils.isFunction(args[args.length - 1])) {
         return args.pop(); // modify the args array!
     }
@@ -6319,7 +6446,7 @@ Property.prototype.request = function () {
     var payload = {
         method: this.getter,
         params: [],
-        callback: this.extractCallback(Array.prototype.slice.call(arguments))
+        callback: this.remarkctCallback(Array.prototype.slice.call(arguments))
     };
     payload.format = this.formatOutput.bind(this);
     return payload;
@@ -6345,7 +6472,7 @@ module.exports = Property;
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file requestmanager.js
  * @author Jeffrey Wilcke <jeff@ethdev.com>
  * @author Marek Kotewicz <marek@ethdev.com>
@@ -6412,7 +6539,7 @@ RequestManager.prototype.sendAsync = function (data, callback) {
         if (err) {
             return callback(err);
         }
-        
+
         if (!Jsonrpc.isValidResponse(result)) {
             return callback(errors.InvalidResponse(result));
         }
@@ -6445,7 +6572,7 @@ RequestManager.prototype.sendBatch = function (data, callback) {
         }
 
         callback(err, results);
-    }); 
+    });
 };
 
 /**
@@ -6549,7 +6676,7 @@ RequestManager.prototype.poll = function () {
     }
 
     var payload = Jsonrpc.toBatchPayload(pollsData);
-    
+
     // map the request id to they poll id
     var pollsIdMap = {};
     payload.forEach(function(load, index){
@@ -6579,7 +6706,7 @@ RequestManager.prototype.poll = function () {
             } else
                 return false;
         }).filter(function (result) {
-            return !!result; 
+            return !!result;
         }).filter(function (result) {
             var valid = Jsonrpc.isValidResponse(result);
             if (!valid) {
@@ -6654,16 +6781,16 @@ var pollSyncing = function(self) {
 
         self.callbacks.forEach(function (callback) {
             if (self.lastSyncState !== sync) {
-                
+
                 // call the callback with true first so the app can stop anything, before receiving the sync data
                 if(!self.lastSyncState && utils.isObject(sync))
                     callback(null, true);
-                
+
                 // call on the next CPU cycle, so the actions of the sync stop can be processes first
                 setTimeout(function() {
                     callback(null, sync);
                 }, 0);
-                
+
                 self.lastSyncState = sync;
             }
         });
@@ -6718,7 +6845,7 @@ module.exports = IsSyncing;
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file transfer.js
  * @author Marek Kotewicz <marek@ethdev.com>
  * @date 2015
@@ -6737,7 +6864,7 @@ var exchangeAbi = require('../contracts/SmartExchange.json');
  * @param {Function} callback, callback
  */
 var transfer = function (soc, from, to, value, callback) {
-    var iban = new Iban(to); 
+    var iban = new Iban(to);
     if (!iban.isValid()) {
         throw new Error('invalid iban address');
     }
@@ -6745,7 +6872,7 @@ var transfer = function (soc, from, to, value, callback) {
     if (iban.isDirect()) {
         return transferToAddress(soc, from, iban.address(), value, callback);
     }
-    
+
     if (!callback) {
         var address = soc.icapNamereg().addr(iban.institution());
         return deposit(soc, from, address, value, iban.client());
@@ -6754,7 +6881,7 @@ var transfer = function (soc, from, to, value, callback) {
     soc.icapNamereg().addr(iban.institution(), function (err, address) {
         return deposit(soc, from, address, value, iban.client(), callback);
     });
-    
+
 };
 
 /**
@@ -7651,7 +7778,7 @@ module.exports = transfer;
 
 	            // Test for salt
 	            if (ciphertextWords[0] == 0x53616c74 && ciphertextWords[1] == 0x65645f5f) {
-	                // Extract salt
+	                // remarkct salt
 	                var salt = WordArray.create(ciphertextWords.slice(2, 4));
 
 	                // Remove salt from ciphertext
@@ -9372,7 +9499,7 @@ module.exports = transfer;
 	            // Shortcut
 	            var typedArrayByteLength = typedArray.byteLength;
 
-	            // Extract bytes
+	            // remarkct bytes
 	            var words = [];
 	            for (var i = 0; i < typedArrayByteLength; i++) {
 	                words[i >>> 2] |= typedArray[i] << (24 - (i % 4) * 8);
@@ -13432,14 +13559,14 @@ module.exports = transfer;
 		var counter = 0;
 		var length = string.length;
 		var value;
-		var extra;
+		var remark;
 		while (counter < length) {
 			value = string.charCodeAt(counter++);
 			if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
 				// high surrogate, and there is a next character
-				extra = string.charCodeAt(counter++);
-				if ((extra & 0xFC00) == 0xDC00) { // low surrogate
-					output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
+				remark = string.charCodeAt(counter++);
+				if ((remark & 0xFC00) == 0xDC00) { // low surrogate
+					output.push(((value & 0x3FF) << 10) + (remark & 0x3FF) + 0x10000);
 				} else {
 					// unmatched surrogate; only append this code unit, in case the next
 					// code unit is the high surrogate of a surrogate pair

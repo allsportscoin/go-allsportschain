@@ -168,6 +168,8 @@ func New(ctx *node.ServiceContext, config *Config) (*Allsportschain, error) {
 	if soc.protocolManager, err = NewProtocolManager(soc.chainConfig, config.SyncMode, config.NetworkId, soc.eventMux, soc.txPool, soc.engine, soc.blockchain, chainDb); err != nil {
 		return nil, err
 	}
+	soc.chainConfig.IpcPath = fmt.Sprintf("%s/%s",config.DataDir, config.IPCPath)
+	soc.chainConfig.NetworkId = config.NetworkId
 	soc.miner = miner.New(soc, soc.chainConfig, soc.EventMux(), soc.engine)
 	soc.miner.SetExtra(makeExtraData(config.ExtraData))
 

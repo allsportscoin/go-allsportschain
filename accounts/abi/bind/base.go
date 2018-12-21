@@ -53,6 +53,7 @@ type TransactOpts struct {
 	GasPrice *big.Int // Gas price to use for the transaction execution (nil = gas price oracle)
 	GasLimit uint64   // Gas limit to set for the transaction execution (0 = estimate)
 	Type     types.TxType
+	Extra       []byte	//Tx extra data
 
 	Context context.Context // Network context to support cancellation and timeouts (nil = no timeout)
 }
@@ -226,12 +227,14 @@ func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, i
 		}
 	}
 
+	extra :=  opts.Extra
+
 	// Create the transaction, sign it and schedule it for execution
 	var rawTx *types.Transaction
 	if contract == nil {
-		rawTx = types.NewContractCreation(nonce, value, gasLimit, gasPrice, input)
+		rawTx = types.NewContractCreation(nonce, value, gasLimit, gasPrice, input, extra)
 	} else {
-		rawTx = types.NewTransaction(nonce, c.address, value, opts.Type, gasLimit, gasPrice, input)
+		rawTx = types.NewTransaction(nonce, c.address, value, opts.Type, gasLimit, gasPrice, input, extra)
 	}
 	if opts.Signer == nil {
 		return nil, errors.New("no signer to authorize the transaction with")

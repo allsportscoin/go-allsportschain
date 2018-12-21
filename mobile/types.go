@@ -201,8 +201,8 @@ type Transaction struct {
 
 //TODO only support normal transaction
 // NewTransaction creates a new transaction with the given properties.
-func NewTransaction(nonce int64, to *Address, amount *BigInt, gasLimit int64, gasPrice *BigInt, data []byte) *Transaction {
-	return &Transaction{types.NewTransaction(uint64(nonce), to.address, amount.bigint,types.Normal, uint64(gasLimit), gasPrice.bigint, common.CopyBytes(data))}
+func NewTransaction(nonce int64, to *Address, amount *BigInt, gasLimit int64, gasPrice *BigInt, data []byte, extra []byte) *Transaction {
+	return &Transaction{types.NewTransaction(uint64(nonce), to.address, amount.bigint,types.Normal, uint64(gasLimit), gasPrice.bigint, common.CopyBytes(data), common.CopyBytes(extra))}
 }
 
 // NewTransactionFromRLP parses a transaction from an RLP data dump.

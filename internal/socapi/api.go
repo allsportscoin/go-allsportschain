@@ -45,10 +45,15 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/allsportschain/go-allsportschain/trie"
+	"github.com/allsportschain/go-allsportschain/contracts/sns"
+	"github.com/allsportschain/go-allsportschain/socclient"
+	"github.com/allsportschain/go-allsportschain/accounts/abi/bind"
+	"github.com/allsportschain/go-allsportschain/consensus/dpos"
 )
 
 const (
-	defaultGasPrice = 50 * params.Shannon
+	defaultGasPrice      = 50 * params.Shannon
+	DefaultTxExtraLength = 32
 )
 
 // PublicAllsportschainAPI provides an API to access Ethereum related information.
@@ -516,14 +521,19 @@ func (s *PublicBlockChainAPI) GetCalledCount(ctx context.Context, address common
 func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
 	block, err := s.b.BlockByNumber(ctx, blockNr)
 	if block != nil {
-		response, err := s.rpcOutputBlock(block, true, fullTx)
-		if err == nil && blockNr == rpc.PendingBlockNumber {
+		response, e := s.rpcOutputBlock(ctx, block, true, fullTx)
+		if e == nil && blockNr == rpc.PendingBlockNumber {
 			// Pending blocks need to nil out a few fields
 			for _, field := range []string{"hash", "nonce", "miner"} {
 				response[field] = nil
 			}
 		}
-		return response, err
+		if response["miner"] != nil {
+			miner := response["miner"].(common.Address)
+			response["minerAlias"],_ = GetAliasByAddress(s.b, miner)
+		}
+
+		return response, e
 	}
 	return nil, err
 }
@@ -533,7 +543,12 @@ func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpc.
 func (s *PublicBlockChainAPI) GetBlockByHash(ctx context.Context, blockHash common.Hash, fullTx bool) (map[string]interface{}, error) {
 	block, err := s.b.GetBlock(ctx, blockHash)
 	if block != nil {
-		return s.rpcOutputBlock(block, true, fullTx)
+		response, e := s.rpcOutputBlock(ctx, block, true, fullTx)
+		if response["miner"] != nil {
+			miner := response["miner"].(common.Address)
+			response["minerAlias"],_ = GetAliasByAddress(s.b, miner)
+		}
+		return response, e
 	}
 	return nil, err
 }
@@ -549,7 +564,7 @@ func (s *PublicBlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context,
 			return nil, nil
 		}
 		block = types.NewBlockWithHeader(uncles[index])
-		return s.rpcOutputBlock(block, false, false)
+		return s.rpcOutputBlock(ctx, block, false, false)
 	}
 	return nil, err
 }
@@ -565,7 +580,7 @@ func (s *PublicBlockChainAPI) GetUncleByBlockHashAndIndex(ctx context.Context, b
 			return nil, nil
 		}
 		block = types.NewBlockWithHeader(uncles[index])
-		return s.rpcOutputBlock(block, false, false)
+		return s.rpcOutputBlock(ctx, block, false, false)
 	}
 	return nil, err
 }
@@ -617,6 +632,7 @@ type CallArgs struct {
 	Gas      hexutil.Uint64  `json:"gas"`
 	GasPrice hexutil.Big     `json:"gasPrice"`
 	Value    hexutil.Big     `json:"value"`
+	Extra   hexutil.Bytes   `json:"extra"`
 	Data     hexutil.Bytes   `json:"data"`
 }
 
@@ -646,7 +662,7 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	}
 
 	// Create new call message
-	msg := types.NewMessage(addr, args.To, 0, args.Value.ToInt(), gas, gasPrice, args.Data, false)
+	msg := types.NewMessage(addr, args.To, 0, args.Value.ToInt(), gas, gasPrice, args.Extra, args.Data, false)
 
 	// Setup context so it may be cancelled the call has completed
 	// or, in case of unmetered gas, setup a context with a timeout.
@@ -803,7 +819,7 @@ func FormatLogs(logs []vm.StructLog) []StructLogRes {
 // RPCMarshalBlock converts the given block to the RPC output which depends on fullTx. If inclTx is true transactions are
 // returned. When fullTx is true the returned block contains full transaction details, otherwise it will only contain
 // transaction hashes.
-func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
+func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]interface{}, map[common.Hash]big.Int, error) {
 	head := b.Header() // copies the header once
 	fields := map[string]interface{}{
 		"number":           (*hexutil.Big)(head.Number),
@@ -814,7 +830,7 @@ func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]inter
 		"sha3Uncles":       head.UncleHash,
 		"logsBloom":        head.Bloom,
 		"stateRoot":        head.Root,
-		"miner":            head.Coinbase,
+		"miner":            head.Validator,
 		"difficulty":       (*hexutil.Big)(head.Difficulty),
 		"extraData":        hexutil.Bytes(head.Extra),
 		"size":             hexutil.Uint64(b.Size()),
@@ -823,8 +839,12 @@ func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]inter
 		"timestamp":        (*hexutil.Big)(head.Time),
 		"transactionsRoot": head.TxHash,
 		"receiptsRoot":     head.ReceiptHash,
+		"dposRoot":		head.DposContext.Root(),
 	}
 
+	txs := b.Transactions()
+	transactions := make([]interface{}, len(txs))
+	transactionsGasPrice := make(map[common.Hash]big.Int, len(txs))
 	if inclTx {
 		formatTx := func(tx *types.Transaction) (interface{}, error) {
 			return tx.Hash(), nil
@@ -834,13 +854,13 @@ func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]inter
 				return newRPCTransactionFromBlockHash(b, tx.Hash()), nil
 			}
 		}
-		txs := b.Transactions()
-		transactions := make([]interface{}, len(txs))
+
 		var err error
 		for i, tx := range txs {
 			if transactions[i], err = formatTx(tx); err != nil {
-				return nil, err
+				return nil,nil, err
 			}
+			transactionsGasPrice[tx.Hash()] = *tx.GasPrice()
 		}
 		fields["transactions"] = transactions
 	}
@@ -852,17 +872,36 @@ func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]inter
 	}
 	fields["uncles"] = uncleHashes
 
-	return fields, nil
+	return fields, transactionsGasPrice, nil
 }
 
 // rpcOutputBlock uses the generalized output filler, then adds the total difficulty field, which requires
 // a `PublicBlockchainAPI`.
-func (s *PublicBlockChainAPI) rpcOutputBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
-	fields, err := RPCMarshalBlock(b, inclTx, fullTx)
+func (s *PublicBlockChainAPI) rpcOutputBlock(ctx context.Context, b *types.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
+	fields, transactionsGasPrice, err := RPCMarshalBlock(b, inclTx, fullTx)
 	if err != nil {
 		return nil, err
 	}
+	var totalGasReward = uint64(0)
+	for txHash, gasPrice := range transactionsGasPrice {
+
+		tx, blockHash, _, index := rawdb.ReadTransaction(s.b.ChainDb(), txHash)
+		if tx == nil {
+			continue
+		}
+		receipts, err := s.b.GetReceipts(ctx, blockHash)
+		if err != nil {
+			continue
+		}
+		if len(receipts) <= int(index) {
+			continue
+		}
+		receipt := receipts[index]
+		totalGasReward = totalGasReward + (receipt.GasUsed * gasPrice.Uint64())
+	}
+
 	fields["totalDifficulty"] = (*hexutil.Big)(s.b.GetTd(b.Hash()))
+	fields["totalReward"] = totalGasReward + dpos.DefaultBlockReward().Uint64()
 	return fields, err
 }
 
@@ -880,6 +919,10 @@ type RPCTransaction struct {
 	TransactionIndex hexutil.Uint    `json:"transactionIndex"`
 	Value            *hexutil.Big    `json:"value"`
 	Type             types.TxType    `json:"type"`
+	Extra			 []byte			 `json:"extra"`
+	FromAlias		 string			 `json:"fromAlias"`
+	ToAlias			 string			 `json:"toAlias"`
+
 	V                *hexutil.Big    `json:"v"`
 	R                *hexutil.Big    `json:"r"`
 	S                *hexutil.Big    `json:"s"`
@@ -905,6 +948,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		To:       tx.To(),
 		Value:    (*hexutil.Big)(tx.Value()),
 		Type:	  tx.Type(),
+		Extra:   tx.Extra(),
 		V:        (*hexutil.Big)(v),
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
@@ -1026,11 +1070,30 @@ func (s *PublicTransactionPoolAPI) GetTransactionCount(ctx context.Context, addr
 func (s *PublicTransactionPoolAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) *RPCTransaction {
 	// Try to return an already finalized transaction
 	if tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash); tx != nil {
-		return newRPCTransaction(tx, blockHash, blockNumber, index)
+		result := newRPCTransaction(tx, blockHash, blockNumber, index)
+
+		fromAlias, _ := GetAliasByAddress(s.b, result.From)
+		result.FromAlias = fromAlias
+
+		toAlias := ""
+		if (result.To != nil) {
+			toAlias, _ = GetAliasByAddress(s.b, *result.To)
+		}
+		result.ToAlias = toAlias
+
+		return result
 	}
 	// No finalized transaction, try to retrieve it from the pool
 	if tx := s.b.GetPoolTransaction(hash); tx != nil {
-		return newRPCPendingTransaction(tx)
+		result := newRPCPendingTransaction(tx)
+
+		fromAlias, _ := GetAliasByAddress(s.b, result.From)
+		result.FromAlias = fromAlias
+
+		toAlias, _ := GetAliasByAddress(s.b, result.From)
+		result.ToAlias = toAlias
+
+		return result
 	}
 	// Transaction unknown, return as such
 	return nil
@@ -1080,12 +1143,22 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"from":              from,
 		"to":                tx.To(),
 		"type":				tx.Type(),
+		"extra":			tx.Extra(),
 		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
 		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
 		"contractAddress":   nil,
 		"logs":              receipt.Logs,
 		"logsBloom":         receipt.Bloom,
 	}
+
+	fromAlias, _ := GetAliasByAddress(s.b, from)
+	fields["fromAlias"] = fromAlias
+
+	toAlias := ""
+	if (tx.To() != nil) {
+		toAlias, _ = GetAliasByAddress(s.b, *tx.To())
+	}
+	fields["toAlias"] = toAlias
 
 	// Assign receipt status or post state.
 	if len(receipt.PostState) > 0 {
@@ -1128,12 +1201,13 @@ type SendTxArgs struct {
 	GasPrice *hexutil.Big    `json:"gasPrice"`
 	Value    *hexutil.Big    `json:"value"`
 	Nonce    *hexutil.Uint64 `json:"nonce"`
+	Extra   *hexutil.Bytes  `json:"extra"`
 	// We accept "data" and "input" for backwards-compatibility reasons. "input" is the
 	// newer name and should be preferred by clients.
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input"`
 	//Type     types.TxType    `json:"type"`
-	Type  *hexutil.Uint `json:type`
+	Type  *hexutil.Uint `json:"type"`
 }
 
 // setDefaults is a helper function that fills in default values for unspecified tx fields.
@@ -1191,11 +1265,16 @@ func (args *SendTxArgs) toTransaction() *types.Transaction {
 		input = *args.Input
 	}
 
+	var extra []byte
+	if args.Extra != nil {
+		extra = *args.Extra
+	}
+
 	txType := types.TxType(*args.Type)
 	if args.To == nil && txType == types.Normal {
-		return types.NewContractCreation(uint64(*args.Nonce), (*big.Int)(args.Value), uint64(*args.Gas), (*big.Int)(args.GasPrice), input)
+		return types.NewContractCreation(uint64(*args.Nonce), (*big.Int)(args.Value), uint64(*args.Gas), (*big.Int)(args.GasPrice), input, extra)
 	}
-	return types.NewTransaction(uint64(*args.Nonce), *args.To, (*big.Int)(args.Value), txType, uint64(*args.Gas), (*big.Int)(args.GasPrice), input)
+	return types.NewTransaction(uint64(*args.Nonce), *args.To, (*big.Int)(args.Value), txType, uint64(*args.Gas), (*big.Int)(args.GasPrice), input, extra)
 }
 
 // submitTransaction is a helper function that submits tx to txPool and logs a message.
@@ -1203,6 +1282,25 @@ func submitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 	//check tx type
 	if err := tx.Validate(); err != nil {
 		return common.Hash{}, err
+	}
+
+	//check tx extra
+	if len(tx.Extra()) > DefaultTxExtraLength {
+		return common.Hash{}, errors.New("transaction extra data length too long")
+	}
+
+	if tx.Extra() != nil {
+		extraBase64 := common.Bytes2Base64(tx.Extra())
+		extraStr,err := common.Base64ToString(extraBase64)
+		if err != nil {
+			log.Error("transaction extra data decode base64 character error:",err.Error())
+			return common.Hash{}, errors.New("transaction extra data invalid")
+		}
+		valid := common.ValidBase64(extraStr)
+		if !valid {
+			log.Error("transaction extra data include invalid character.")
+			return common.Hash{}, errors.New("transaction extra data invalid")
+		}
 	}
 
 	//check to is a candidate or not
@@ -1321,11 +1419,10 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Sen
 // The sender is responsible for signing the transaction and using the correct nonce.
 func (s *PublicTransactionPoolAPI) SendRawTransaction(ctx context.Context, encodedTx hexutil.Bytes) (common.Hash, error) {
 	tx := new(types.Transaction)
-	log.Info(fmt.Sprintf("send raw transaction before decode: %v \n", encodedTx))
 	if err := rlp.DecodeBytes(encodedTx, tx); err != nil {
 		return common.Hash{}, err
 	}
-	log.Info(fmt.Sprintf("send raw transaction: %v \n", tx))
+
 	return submitTransaction(ctx, s.b, tx)
 }
 
@@ -1576,4 +1673,79 @@ func (s *PublicNetAPI) PeerCount() hexutil.Uint {
 // Version returns the current ethereum protocol version.
 func (s *PublicNetAPI) Version() string {
 	return fmt.Sprintf("%d", s.networkVersion)
+}
+
+func (s *PublicBlockChainAPI) GetAddrByAlias(aliasName string) (common.Address) {
+	ret,_ := GetAddressByAlias(s.b, aliasName)
+
+	return ret
+}
+
+//TODO why use ipc to query contract info???
+func GetAddressByAlias(b Backend, aliasName string) (common.Address, error) {
+
+	//client, err := rpc.Dial(s.config.IpcPath)
+	client, err := rpc.Dial(b.ChainConfig().IpcPath)
+	if(err != nil) {
+		return common.Address{}, err
+	}
+	defer client.Close()
+
+	//log.Info("ipc: ", self.config.IpcPath)
+	socClient := socclient.NewClient(client)
+	//key, _ := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	//transactOpts := bind.NewKeyedTransactor(key)
+	//SNSAddr := common.HexToAddress("0xd379eb952606480d9fd23c4528c6c321bb4b2a91")
+	callOpts := bind.CallOpts {
+		From: common.Address{},
+		Pending: false,
+		Context: nil,
+	}
+
+	snsCaller, err := sns.NewSNSCaller(&callOpts, socClient, b.ChainConfig().NetworkId)
+
+	addr, err := snsCaller.GetAddrByAlias(aliasName)
+	if (err != nil) {
+		return common.Address{}, err
+	}
+	return addr, nil
+}
+
+func (s *PublicBlockChainAPI)GetAliasByAddr(addr common.Address) (string) {
+	ret,_ := GetAliasByAddress(s.b, addr)
+
+	return ret
+}
+
+
+//TODO why use ipc to query contract info???
+func GetAliasByAddress(b Backend, addr common.Address) (string, error) {
+	if (addr == common.Address{}) {
+		log.Error("address empty")
+		return "", errors.New("Address nil")
+	}
+
+	//client, err := rpc.Dial(s.config.IpcPath)
+	client, err := rpc.Dial(b.ChainConfig().IpcPath)
+	if(err != nil) {
+		log.Error(fmt.Sprintf("Dial fail:%v , err:", b.ChainConfig().IpcPath, err))
+		return "", err
+	}
+	defer client.Close()
+
+	socClient := socclient.NewClient(client)
+	callOpts := bind.CallOpts {
+		From: common.Address{},
+		Pending: false,
+		Context: nil,
+	}
+
+	snsCaller, err := sns.NewSNSCaller(&callOpts, socClient, b.ChainConfig().NetworkId)
+
+	alias, err := snsCaller.GetAliasByAddr(addr)
+	if (err != nil) {
+		return "", err
+	}
+
+	return alias,nil
 }
