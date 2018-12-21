@@ -85,6 +85,26 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
 func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config, dposContext *types.DposContext) (*types.Receipt, uint64, error) {
+	//check tx extra data length
+	if len(tx.Extra()) > defaultTxExtraLength {
+		log.Error("ApplyTransaction","tx.Extra", "transaction extra data length too long")
+		return  types.NewReceipt([]byte{}, true, *usedGas), 0, nil
+	}
+
+	if tx.Extra() != nil {
+		extraBase64 := common.Bytes2Base64(tx.Extra())
+		extraStr,err := common.Base64ToString(extraBase64)
+		if err != nil {
+			log.Error("transaction extra data decode base64 character error:",err.Error())
+			return  types.NewReceipt([]byte{}, true, *usedGas), 0, nil
+		}
+		valid := common.ValidBase64(extraStr)
+		if !valid {
+			log.Error("transaction extra data include invalid character.")
+			return  types.NewReceipt([]byte{}, true, *usedGas), 0, nil
+		}
+	}
+
 	msg, err := tx.AsMessage(types.MakeSigner(config, header.Number))
 	if err != nil {
 		return nil, 0, err

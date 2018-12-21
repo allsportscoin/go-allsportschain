@@ -242,7 +242,7 @@ func (g *Genesis) ToBlock(db socdb.Database) *types.Block {
 		for key, value := range account.Storage {
 			statedb.SetState(addr, key, value)
 		}
-		tx := types.NewTransaction(account.Nonce, addr, account.Balance,types.Normal,1, big.NewInt(1),nil)
+		tx := types.NewTransaction(account.Nonce, addr, account.Balance,types.Normal,1, big.NewInt(1),nil,nil)
 		tx, _ = tx.WithSignature(signer, common.Hex2Bytes("9bea4c4daac7c7c52e093e6a4c35dbbcf8856f1af7b059ba20253e70848d094f8a8fae537ce25ed8cb5af9adac3f141af69bd515bd2ba031522df09b97dd72b100"))
 		txs = append(txs, tx)
 	}
@@ -333,7 +333,7 @@ func DefaultGenesisBlock() *Genesis {
 		Config:     params.MainnetChainConfig,
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
-		GasLimit:   1342177280,
+		GasLimit:   180000000,
 		Difficulty: big.NewInt(131072),
 		//Alloc:      decodePrealloc(mainnetAllocData),
 		Alloc:		defaultMainNetGennesisAlloc(),
@@ -346,7 +346,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 		Config:     params.TestnetChainConfig,
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
-		GasLimit:   1342177280,
+		GasLimit:   180000000,
 		Difficulty: big.NewInt(131072),
 		Alloc:      defaultTestNetGennesisAlloc(),
 	}
@@ -354,13 +354,13 @@ func DefaultTestnetGenesisBlock() *Genesis {
 
 func defaultTestNetGennesisAlloc() map[common.Address]GenesisAccount {
 	alloc := map[common.Address]GenesisAccount{
-		common.HexToAddress("0x90ae4a42d524506f99249e5fc10d948c4e07f441"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:0},
-		common.HexToAddress("0x97cf512dc01011c3e4926c80b12d55609729bc4a"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:1},
-		common.HexToAddress("0xaaf44b8cdb34c41b17bcdb6dedd34bd5c775f9d7"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:2},
-		common.HexToAddress("0x7e3a758190beba57902b5b08b59f15a102e53e67"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:3},
-		common.HexToAddress("0xe72239a57f06079b1c849d90a4c606e0ff1e3cad"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:4},
-		common.HexToAddress("0x6034094ff39f12786f8d5f45ae1ece5ec6b83064"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:5},
-		common.HexToAddress("0x6c18f4f165572afa4068dfa3ce537c4e22575144"): {Balance: big.NewInt(2).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:6},
+		common.HexToAddress("0x90ae4a42d524506f99249e5fc10d948c4e07f441"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:0},
+		common.HexToAddress("0x97cf512dc01011c3e4926c80b12d55609729bc4a"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:1},
+		common.HexToAddress("0xaaf44b8cdb34c41b17bcdb6dedd34bd5c775f9d7"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:2},
+		common.HexToAddress("0x7e3a758190beba57902b5b08b59f15a102e53e67"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:3},
+		common.HexToAddress("0xe72239a57f06079b1c849d90a4c606e0ff1e3cad"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:4},
+		common.HexToAddress("0x6034094ff39f12786f8d5f45ae1ece5ec6b83064"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:5},
+		common.HexToAddress("0x6c18f4f165572afa4068dfa3ce537c4e22575144"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:6},
 		common.HexToAddress("0xf97e86587b04c6f7a033fb365a8413e2e1af1f3e"): {Balance: big.NewInt(1).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:7},
 
 	}
@@ -376,7 +376,7 @@ func defaultMainNetGennesisAlloc() map[common.Address]GenesisAccount {
 		common.HexToAddress("0xe72239a57f06079b1c849d90a4c606e0ff1e3cad"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:4},
 		common.HexToAddress("0x6034094ff39f12786f8d5f45ae1ece5ec6b83064"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:5},
 		common.HexToAddress("0x6c18f4f165572afa4068dfa3ce537c4e22575144"): {Balance: big.NewInt(2).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:6},
-		common.HexToAddress("0xf97e86587b04c6f7a033fb365a8413e2e1af1f3e"): {Balance: big.NewInt(1).Mul(big.NewInt(2e+8),big.NewInt(1e+18)), Nonce:7},
+		common.HexToAddress("0xf97e86587b04c6f7a033fb365a8413e2e1af1f3e"): {Balance: big.NewInt(1).Mul(big.NewInt(1e+8),big.NewInt(1e+18)), Nonce:7},
 
 	}
 	return alloc
