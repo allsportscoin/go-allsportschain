@@ -23,6 +23,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"context"
 
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/consensus"
@@ -37,7 +38,10 @@ import (
 	"github.com/allsportschain/go-allsportschain/params"
 	"github.com/allsportschain/go-allsportschain/socdb"
 	"github.com/allsportschain/go-allsportschain/consensus/dpos"
-
+	"github.com/allsportschain/go-allsportschain/rpc"
+	"github.com/allsportschain/go-allsportschain/socclient"
+	"github.com/allsportschain/go-allsportschain/contracts/updatevote"
+	"github.com/allsportschain/go-allsportschain/accounts/abi/bind"
 )
 
 const (
@@ -265,12 +269,49 @@ func (self *worker) mintLoop() {
 	}
 }
 
+func (self *worker)checkVersion() (bool){
+	client, err := rpc.Dial(self.config.IpcPath)
+	if(err != nil) {
+		log.Error(fmt.Sprintf("Dial fail:%v , err:", self.config.IpcPath, err))
+		return true
+	}
+	defer client.Close()
+
+	//log.Info("ipc: ", self.config.IpcPath)
+	socClient := socclient.NewClient(client)
+	ct := new(context.Context)
+	callOpts := bind.CallOpts{
+		From:common.HexToAddress(""),
+		Pending:false,
+		Context:*ct,
+	}
+
+	udv ,err := updatevote.NewUpdateVoteCaller(&callOpts, self.config.NetworkId, socClient)
+	if err != nil {
+		log.Error("new updateVote fail")
+		return true
+	}
+
+	reqVer ,err := udv.GetVersion()
+	if err != nil {
+		log.Error("GetVersion fail")
+		return true
+	}
+
+	if (reqVer != params.Version) {
+		log.Error(fmt.Sprintf("your gsoc version too low (version:%v), mine stopped !!! plase update gsoc to version:%v", params.Version, reqVer))
+		return false
+	}
+	return true
+}
+
 func (self *worker) mintBlock(now int64) {
 	engine, ok := self.engine.(*dpos.Dpos)
 	if !ok {
 		log.Error("Only the dpos engine was allowed")
 		return
 	}
+
 	err := engine.CheckValidator(self.chain.CurrentBlock(), now)
 	if err != nil {
 		switch err {
@@ -284,6 +325,11 @@ func (self *worker) mintBlock(now int64) {
 		}
 		return
 	}
+
+	if (!self.checkVersion()) {
+		return
+	}
+
 	log.Info(fmt.Sprintf("commitNewWork in mintBlock--------"))
 	self.commitNewWork(true, now)
 	/*
