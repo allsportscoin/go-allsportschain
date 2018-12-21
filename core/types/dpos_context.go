@@ -11,6 +11,9 @@ import (
 	"fmt"
 	"encoding/binary"
 	"github.com/allsportschain/go-allsportschain/params"
+	"math/rand"
+		"github.com/allsportschain/go-allsportschain/log"
+	"github.com/allsportschain/go-allsportschain/crypto"
 )
 
 type DposContext struct {
@@ -31,7 +34,13 @@ var (
 	mintCntPrefix   = []byte("mintCnt-")
 )
 const (
-	 MaxVoteCandidateNum = 30
+	MaxVoteCandidateNum = 30
+	BlockInterval    = int64(3)
+	MaxValidatorSize = 7
+	LoopInterval 	 = BlockInterval * MaxValidatorSize
+	EpochInterval    = int64(LoopInterval * 10)
+	SafeSize         = MaxValidatorSize * 2/3 + 1
+	ConsensusSize    = MaxValidatorSize * 2/3 + 1
 )
 
 func NewEpochTrie(root common.Hash, db socdb.Database) (*trie.Trie, error) {
@@ -331,7 +340,7 @@ func (d *DposContext) UnDelegate(config *params.ChainConfig, header *Header, del
 		return err
 	}
 	if candidateInTrie == nil {
-		return errors.New("invalid candidate to undelegate")
+		return errors.New(candidateAddr.String() + " is invalid candidate")
 	}
 
 	voteKey := []byte{}
@@ -518,4 +527,31 @@ func (dc * DposContext) GetCandidates() ([]common.Address, error) {
 	return candidates, nil
 }
 
+
+func (dc *DposContext) SuffleValidators(header, parent *Header) error {
+
+	currentLoop := header.Time.Int64() / LoopInterval
+	prevLoop := parent.Time.Int64() / LoopInterval
+
+	if currentLoop != prevLoop{
+		candidates, err := dc.GetValidators()
+		if err != nil {
+			return err
+		}
+		// shuffle validators
+		seed := int64(binary.LittleEndian.Uint32(crypto.Keccak512(parent.Hash().Bytes())))
+		r := rand.New(rand.NewSource(seed))
+		for i := len(candidates) - 1; i > 0; i-- {
+			j := int(r.Int31n(int32(i + 1)))
+			candidates[i], candidates[j] = candidates[j], candidates[i]
+		}
+
+		err = dc.SetValidators(candidates)
+		if err != nil {
+			log.Warn("SetValidators error","err",err)
+		}
+		log.Info("Come to new Loop shuffle validators", "prevLoop", prevLoop, "currentLoop", currentLoop)
+	}
+	return nil
+}
 
