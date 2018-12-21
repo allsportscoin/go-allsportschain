@@ -70,8 +70,8 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 type Header struct {
 	ParentHash  common.Hash       `json:"parentHash"       gencodec:"required"`
 	UncleHash   common.Hash       `json:"sha3Uncles"       gencodec:"required"`
-	Validator   common.Address    `json:"validator"        gencodec:"required"`
-	Coinbase    common.Address    `json:"miner"            gencodec:"required"`
+	Validator   common.Address    `json:"minner"           gencodec:"required"`
+	Coinbase    common.Address    `json:"coinbase"         gencodec:"required"`
 	Root        common.Hash       `json:"stateRoot"        gencodec:"required"`
 	TxHash      common.Hash       `json:"transactionsRoot" gencodec:"required"`
 	ReceiptHash common.Hash       `json:"receiptsRoot"     gencodec:"required"`
