@@ -362,7 +362,7 @@ func (s *Allsportschain) SetValidator(validator common.Address) {
 func (s *Allsportschain) setAuthorize() error{
 	validator, err := s.Validator()
 	if err != nil {
-		log.Error("Cannot start mining without validator", "err", err)
+		log.Info("Cannot start mining without validator", "err", err)
 		return fmt.Errorf("validator missing: %v", err)
 	}
 
