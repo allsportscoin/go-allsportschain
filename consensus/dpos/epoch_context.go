@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"math/rand"
-	"sort"
+		"sort"
 
 	"github.com/allsportschain/go-allsportschain/common"
 	"github.com/allsportschain/go-allsportschain/core/state"
 	"github.com/allsportschain/go-allsportschain/core/types"
-	"github.com/allsportschain/go-allsportschain/crypto"
-	"github.com/allsportschain/go-allsportschain/log"
+		"github.com/allsportschain/go-allsportschain/log"
 	"github.com/allsportschain/go-allsportschain/trie"
 	"github.com/allsportschain/go-allsportschain/params"
 )
@@ -72,12 +70,12 @@ func (ec *EpochContext) kickoutValidator(config *params.ChainConfig, header *typ
 		return errors.New("no validator could be kickout")
 	}
 
-	epochDuration := epochInterval
+	epochDuration := types.EpochInterval
 	// First epoch duration may lt epoch interval,
 	// while the first block time wouldn't always align with epoch interval,
 	// so caculate the first epoch duartion with first block time instead of epoch interval,
 	// prevent the validators were kickout incorrectly.
-	if ec.TimeStamp-timeOfFirstBlock < epochInterval {
+	if ec.TimeStamp-timeOfFirstBlock < types.EpochInterval {
 		epochDuration = ec.TimeStamp - timeOfFirstBlock
 	}
 
@@ -90,7 +88,7 @@ func (ec *EpochContext) kickoutValidator(config *params.ChainConfig, header *typ
 		if cntBytes := ec.DposContext.MintCntTrie().Get(key); cntBytes != nil {
 			cnt = int64(binary.BigEndian.Uint64(cntBytes))
 		}
-		if cnt < epochDuration/blockInterval/ maxValidatorSize /2 {
+		if cnt < epochDuration/types.BlockInterval/ types.MaxValidatorSize /2 {
 			// not active validators need kickout
 			needKickoutValidators = append(needKickoutValidators, &common.SortableAddress{Address:validator, Weight:big.NewInt(cnt)})
 		}
@@ -106,14 +104,14 @@ func (ec *EpochContext) kickoutValidator(config *params.ChainConfig, header *typ
 	iter := trie.NewIterator(ec.DposContext.CandidateTrie().NodeIterator(nil))
 	for iter.Next() {
 		candidateCount++
-		if candidateCount >= needKickoutValidatorCnt+safeSize {
+		if candidateCount >= needKickoutValidatorCnt+types.SafeSize {
 			break
 		}
 	}
 
 	for i, validator := range needKickoutValidators {
 		// ensure candidate count greater than or equal to safeSize
-		if candidateCount <= safeSize {
+		if candidateCount <= types.SafeSize {
 			log.Info("No more candidate can be kickout", "prevEpochID", epoch, "candidateCount", candidateCount, "needKickoutCount", len(needKickoutValidators)-i)
 			return nil
 		}
@@ -129,11 +127,11 @@ func (ec *EpochContext) kickoutValidator(config *params.ChainConfig, header *typ
 }
 
 func (ec *EpochContext) lookupValidator(now int64) (validator common.Address, err error) {
-	offset := now % epochInterval
-	if offset%blockInterval != 0 {
+	offset := now % types.EpochInterval
+	if offset%types.BlockInterval != 0 {
 		return common.Address{}, ErrInvalidMintBlockTime
 	}
-	offset /= blockInterval
+	offset /= types.BlockInterval
 
 	validators, err := ec.DposContext.GetValidators()
 	if err != nil {
@@ -161,9 +159,9 @@ func (ec *EpochContext) tryElect(config *params.ChainConfig, header,genesis, par
 		log.Info("change multi-vote on block number : "+ config.MultiVoteBlock.String())
 	}
 
-	genesisEpoch := genesis.Time.Int64() / epochInterval
-	prevEpoch := parent.Time.Int64() / epochInterval
-	currentEpoch := ec.TimeStamp / epochInterval
+	genesisEpoch := genesis.Time.Int64() / types.EpochInterval
+	prevEpoch := parent.Time.Int64() / types.EpochInterval
+	currentEpoch := ec.TimeStamp / types.EpochInterval
 
 	prevEpochIsGenesis := prevEpoch == genesisEpoch
 	if prevEpochIsGenesis && prevEpoch < currentEpoch {
@@ -190,28 +188,19 @@ func (ec *EpochContext) tryElect(config *params.ChainConfig, header,genesis, par
 		for candidate, cnt := range votes {
 			candidates = append(candidates, &common.SortableAddress{Address:candidate, Weight:cnt})
 		}
-		if len(candidates) < safeSize {
+		if len(candidates) < types.SafeSize {
 			return errors.New("too few candidates")
 		}
 		sort.Sort(candidates)
-		if len(candidates) > maxValidatorSize {
-			candidates = candidates[:maxValidatorSize]
+		if len(candidates) > types.MaxValidatorSize {
+			candidates = candidates[:types.MaxValidatorSize]
 		}
 
-		// shuffle candidates
-		seed := int64(binary.LittleEndian.Uint32(crypto.Keccak512(parent.Hash().Bytes()))) + i
-		r := rand.New(rand.NewSource(seed))
-		for i := len(candidates) - 1; i > 0; i-- {
-			j := int(r.Int31n(int32(i + 1)))
-			candidates[i], candidates[j] = candidates[j], candidates[i]
-		}
 		sortedValidators := make([]common.Address, 0)
 		for _, candidate := range candidates {
 			sortedValidators = append(sortedValidators, candidate.Address)
 		}
 
-		epochTrie, _ := types.NewEpochTrie(common.Hash{}, ec.DposContext.DB())
-		ec.DposContext.SetEpoch(epochTrie)
 		ec.DposContext.SetValidators(sortedValidators)
 		log.Info("Come to new epoch", "prevEpoch", i, "nextEpoch", i+1)
 	}

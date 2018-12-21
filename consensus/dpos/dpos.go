@@ -29,13 +29,6 @@ const (
 	extraVanity        = 32   // Fixed number of extra-data prefix bytes reserved for signer vanity
 	extraSeal          = 65   // Fixed number of extra-data suffix bytes reserved for signer seal
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
-
-	blockInterval    = int64(3)
-	epochInterval    = int64(210)
-	maxValidatorSize = 7
-	safeSize         = maxValidatorSize*2/3 + 1
-	consensusSize    = maxValidatorSize*2/3 + 1
-
 )
 
 var (
@@ -44,7 +37,7 @@ var (
 	big32 = big.NewInt(32)
 
 	socInitCount =  big.NewInt(1).Mul(big.NewInt(15e+8),big.NewInt(1e+18)) //15e+8)* (1e+18)
-	defaultBlockReward  *big.Int = big.NewInt(5e+18)  // Block reward in wei for successfully mining a block
+	defaultBlockReward  *big.Int = big.NewInt(0e+18)  // Block reward in wei for successfully mining a block
 	timeOfFirstBlock = int64(0)
 
 	confirmedBlockHead = []byte("confirmed-block-head")
@@ -138,6 +131,10 @@ func New(config *params.DposConfig, db socdb.Database) *Dpos {
 	}
 }
 
+func DefaultBlockReward() *big.Int {
+	return defaultBlockReward
+}
+
 func (d *Dpos) Author(header *types.Header) (common.Address, error) {
 	return header.Validator, nil
 }
@@ -188,7 +185,8 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
-	if parent.Time.Uint64()+uint64(blockInterval) > header.Time.Uint64() || header.Time.Cmp(parent.Time) <= 0 {
+	// add check gas limit
+	if parent.Time.Uint64()+uint64(types.BlockInterval) > header.Time.Uint64() || header.Time.Cmp(parent.Time) <= 0 || header.GasLimit != parent.GasLimit {
 		return ErrInvalidTimestamp
 	}
 	return nil
@@ -284,7 +282,7 @@ func (d *Dpos) updateConfirmedBlockHeader(chain consensus.ChainReader) error {
 	validatorMap := make(map[common.Address]bool)
 	for d.confirmedBlockHeader.Hash() != curHeader.Hash() &&
 		d.confirmedBlockHeader.Number.Uint64() < curHeader.Number.Uint64() {
-		curEpoch := curHeader.Time.Int64() / epochInterval
+		curEpoch := curHeader.Time.Int64() / types.EpochInterval
 		if curEpoch != epoch {
 			epoch = curEpoch
 			validatorMap = make(map[common.Address]bool)
@@ -292,12 +290,12 @@ func (d *Dpos) updateConfirmedBlockHeader(chain consensus.ChainReader) error {
 		// fast return
 		// if block number difference less consensusSize-witnessNum
 		// there is no need to check block is confirmed
-		if curHeader.Number.Int64()-d.confirmedBlockHeader.Number.Int64() < int64(consensusSize-len(validatorMap)) {
+		if curHeader.Number.Int64()-d.confirmedBlockHeader.Number.Int64() < int64(types.ConsensusSize-len(validatorMap)) {
 			log.Debug("Dpos fast return", "current", curHeader.Number.String(), "confirmed", d.confirmedBlockHeader.Number.String(), "witnessCount", len(validatorMap))
 			return nil
 		}
 		validatorMap[curHeader.Validator] = true
-		if len(validatorMap) >= consensusSize {
+		if len(validatorMap) >= types.ConsensusSize {
 			d.confirmedBlockHeader = curHeader
 			if err := d.storeConfirmedBlockHeader(d.db); err != nil {
 				return err
@@ -360,6 +358,9 @@ func (d *Dpos) Finalize(chain consensus.ChainReader, header *types.Header, state
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 
 	parent := chain.GetHeaderByHash(header.ParentHash)
+
+
+
 	epochContext := &EpochContext{
 		statedb:     state,
 		DposContext: dposContext,
@@ -376,8 +377,13 @@ func (d *Dpos) Finalize(chain consensus.ChainReader, header *types.Header, state
 		return nil, fmt.Errorf("got error when elect next epoch, err: %s", err)
 	}
 
+	err = dposContext.SuffleValidators(header, parent)
+	if err != nil {
+		return nil, fmt.Errorf("got error when suffle validators next loop, err: %s", err)
+	}
+
 	//update mint count trie
-	dposContext.UpdateMintCnt(parent.Time.Int64(), header.Time.Int64(), header.Validator, epochInterval)
+	dposContext.UpdateMintCnt(parent.Time.Int64(), header.Time.Int64(), header.Validator, types.EpochInterval)
 	header.DposContext = dposContext.ToProto()
 	return types.NewBlock(header, txs, uncles, receipts), nil
 }
@@ -494,9 +500,9 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 }
 
 func PrevSlot(now int64) int64 {
-	return int64((now-1)/blockInterval) * blockInterval
+	return int64((now-1)/types.BlockInterval) * types.BlockInterval
 }
 
 func NextSlot(now int64) int64 {
-	return int64((now+blockInterval-1)/blockInterval) * blockInterval
+	return int64((now+types.BlockInterval-1)/types.BlockInterval) * types.BlockInterval
 }

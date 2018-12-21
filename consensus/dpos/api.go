@@ -196,7 +196,7 @@ func (api * API) GetTotalWei(number *rpc.BlockNumber) (*big.Int, error) {
 }
 
 func (api * API) GetEpochInterval(number *rpc.BlockNumber) ( *big.Int, error) {
-	return big.NewInt(epochInterval), nil
+	return big.NewInt(types.EpochInterval), nil
 }
 
 func (api * API) GetValidatorsMintCount(number *rpc.BlockNumber) (map[string]interface{}, error) {
