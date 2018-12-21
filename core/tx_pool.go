@@ -38,6 +38,7 @@ import (
 const (
 	// chainHeadChanSize is the size of channel listening to ChainHeadEvent.
 	chainHeadChanSize = 10
+	defaultTxExtraLength = 32
 )
 
 var (
@@ -557,6 +558,25 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if tx.Size() > 32*1024 {
 		return ErrOversizedData
 	}
+
+	//tx extra data size limit,reject transactions that length of extra data over 32
+	if len(tx.Extra()) > defaultTxExtraLength {
+		return errors.New("transaction extra data length too long")
+	}
+	if tx.Extra() != nil {
+		extraBase64 := common.Bytes2Base64(tx.Extra())
+		extraStr,err := common.Base64ToString(extraBase64)
+		if err != nil {
+			log.Error("transaction extra data decode base64 character error:",err.Error())
+			return errors.New("transaction extra data invalid")
+		}
+		valid := common.ValidBase64(extraStr)
+		if !valid {
+			log.Error("transaction extra data include invalid character.")
+			return errors.New("transaction extra data invalid")
+		}
+	}
+
 	// Transactions can't be negative. This may never happen using RLP decoded
 	// transactions but may occur if you create a transaction using the RPC.
 	if tx.Value().Sign() < 0 {
