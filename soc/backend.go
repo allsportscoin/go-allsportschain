@@ -134,7 +134,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Allsportschain, error) {
 		bloomIndexer:   NewBloomIndexer(chainDb, params.BloomBitsBlocks),
 	}
 
-	soc.setAuthorize()
+	//soc.setAuthorize()
 	log.Info("Initialising Allsportschain protocol", "versions", ProtocolVersions, "network", config.NetworkId)
 
 	if !config.SkipBcVersionCheck {
